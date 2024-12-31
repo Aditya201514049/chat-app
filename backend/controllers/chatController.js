@@ -33,7 +33,7 @@ const createChat = async (req, res) => {
       sender: senderId, 
       recipient: recipientId 
     });
-    
+
     await newChat.save();
     res.status(201).json(newChat);
   } catch (error) {
@@ -90,7 +90,9 @@ const getChats = async (req, res) => {
       $or: [{ sender: userId }, { recipient: userId }],
     })
       .populate('sender', 'name email')
-      .populate('recipient', 'name email');
+      .populate('recipient', 'name email')
+     
+      
 
     res.status(200).json(chats);
   } catch (error) {
