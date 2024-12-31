@@ -31,9 +31,12 @@ const LoginForm = () => {
       const data = await response.json();
 
       if (response.ok) {
+
+        
         // Save JWT token in localStorage
         localStorage.setItem("token", data.token);
 
+        console.log("Token saved in localStorage:", localStorage.getItem("token")); // Debugging
         //alert("Login successful!");
 
         setFormData({ email: "", password: "" }); // Clear form
