@@ -43,6 +43,7 @@ const createChat = async (req, res) => {
 };
 
 // Send a new message to a chat
+/*
 const sendMessage = async (req, res) => {
   try {
     const { chatId, content } = req.body;
@@ -67,6 +68,7 @@ const sendMessage = async (req, res) => {
     res.status(500).json({ message: 'Error sending message' });
   }
 };
+*/
 
 // Get all messages in a chat
 const getMessages = async (req, res) => {
@@ -103,7 +105,7 @@ const getChats = async (req, res) => {
 
 module.exports = {
   createChat,
-  sendMessage,
+  //sendMessage,
   getMessages,
   getChats,
 };
