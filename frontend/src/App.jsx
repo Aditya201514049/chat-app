@@ -4,6 +4,7 @@ import RegisterForm from './pages/RegisterForm';
 import LoginForm from './pages/LoginForm';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
+import ChatPage from './pages/ChatPage';
 
 function App() {
 
@@ -15,6 +16,7 @@ function App() {
         <Routes>
           {/* Set the home page as the Register Form */}
           <Route path="/Home" element={ <Home/>} />
+          <Route path="/ChatPage" element={ <ChatPage/>} />
           <Route path="/login" element={<LoginForm />} />
           <Route path="/register" element={<RegisterForm />} />
           <Route path="/" element={<RegisterForm />} />

@@ -43,7 +43,7 @@ const createChat = async (req, res) => {
 };
 
 // Send a new message to a chat
-/*
+
 const sendMessage = async (req, res) => {
   try {
     const { chatId, content } = req.body;
@@ -68,7 +68,7 @@ const sendMessage = async (req, res) => {
     res.status(500).json({ message: 'Error sending message' });
   }
 };
-*/
+
 
 // Get all messages in a chat
 const getMessages = async (req, res) => {
@@ -94,8 +94,6 @@ const getChats = async (req, res) => {
       .populate('sender', 'name email')
       .populate('recipient', 'name email')
      
-      
-
     res.status(200).json(chats);
   } catch (error) {
     console.error(`Error in getChats: ${error.message}`);
@@ -103,9 +101,11 @@ const getChats = async (req, res) => {
   }
 };
 
+
+
 module.exports = {
   createChat,
-  //sendMessage,
+  sendMessage,
   getMessages,
   getChats,
 };

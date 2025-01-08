@@ -1,9 +1,36 @@
-import React from "react";
+import React, {useEffect, useState} from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const [userName, setUserName] = useState(""); // State to store the user's name
   const token = localStorage.getItem("token"); // Check if token exists
+
+    // Fetch user info
+    useEffect(() => {
+      const fetchUserInfo = async () => {
+        if (token) {
+          try {
+            const response = await fetch("http://localhost:5000/api/users/me", {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+  
+            if (response.ok) {
+              const data = await response.json();
+              setUserName(data.name); // Set the user's name
+            } else {
+              console.error("Failed to fetch user info");
+            }
+          } catch (error) {
+            console.error("Error:", error);
+          }
+        }
+      };
+  
+      fetchUserInfo();
+    }, [token]);
 
   // Logout function
   const handleLogout = () => {
@@ -40,6 +67,25 @@ const Navbar = () => {
           ) : (
             <>
               {/* After Login: Logout */}
+
+              <Link to="/Home">
+                <button className="btn btn-primary btn-sm hover:btn-accent">
+                  Home
+                </button>
+              </Link>
+
+              <Link to="/ChatPage">
+                <button className="btn btn-primary btn-sm hover:btn-accent">
+                  Chats
+                </button>
+              </Link>
+
+              {userName && (
+                <span className="text-sm font-medium">
+                   {userName}
+                </span>
+              )}
+
               <button
                 onClick={handleLogout}
                 className="btn btn-error btn-sm hover:btn-warning"

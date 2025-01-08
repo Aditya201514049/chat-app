@@ -1,6 +1,8 @@
+
+
 import { useState, useEffect } from 'react';
 
-const ChatRoom = () => {
+const ChatRoom = ({ onSelectChat }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -36,6 +38,35 @@ const ChatRoom = () => {
     fetchUsers();
   }, []);
 
+  const handleUserClick = async (recipientId) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      return alert('Please log in first');
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/chats/create', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ recipientId }), // Send recipientId to create or retrieve chat
+      });
+
+      const chat = await response.json();
+
+      if (response.ok) {
+        // Pass chat information to parent component
+        onSelectChat(chat); // This will be used to display the conversation
+      } else {
+        alert('Error creating or fetching chat');
+      }
+    } catch (error) {
+      console.error('Error handling user click:', error);
+    }
+  };
+
   return (
     <div className="p-4 bg-gray-200 rounded-lg shadow-md max-h-screen overflow-auto">
       {loading ? (
@@ -48,6 +79,7 @@ const ChatRoom = () => {
               <div
                 key={user._id}
                 className="p-3 bg-gray-100 border-b border-gray-300 rounded-md hover:bg-gray-200 transition ease-in-out duration-150"
+                onClick={() => handleUserClick(user._id)} // Make user clickable
               >
                 <p className="text-gray-700">{user.name}</p>
               </div>

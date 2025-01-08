@@ -71,5 +71,23 @@ const getAllUsers = async (req, res) => {
   }
 };
 
+// Get logged-in user's own information
+const getOwnInfo = async (req, res) => {
+  try {
+    const user = req.user; // `req.user` is populated by the `protect` middleware
 
-module.exports = { registerUser, loginUser, getAllUsers };
+    if (!user) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    res.status(200).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch user info", error });
+  }
+};
+
+module.exports = { registerUser, loginUser, getAllUsers, getOwnInfo };
