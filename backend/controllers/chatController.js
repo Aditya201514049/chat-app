@@ -101,6 +101,35 @@ const getChats = async (req, res) => {
   }
 };
 
+// Get a specific chat by its ID
+const getChatById = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const userId = req.user._id; // Retrieved from authMiddleware
+
+    const chat = await Chat.findById(chatId)
+      .populate('sender', 'name email')
+      .populate('recipient', 'name email');
+
+    if (!chat) {
+      return res.status(404).json({ message: 'Chat not found' });
+    }
+
+    // Check if the logged-in user is part of the chat
+    if (chat.sender._id.toString() !== userId.toString() && 
+        chat.recipient._id.toString() !== userId.toString() 
+      ) {
+      return res.status(403).json({ message: 'You are not authorized to view this chat' });
+    }
+
+    res.status(200).json(chat);
+  } catch (error) {
+    console.error(`Error in getChatById: ${error.message}`);
+    res.status(500).json({ message: 'Error retrieving chat' });
+  }
+};
+
+
 
 
 module.exports = {
@@ -108,4 +137,5 @@ module.exports = {
   sendMessage,
   getMessages,
   getChats,
+  getChatById,
 };

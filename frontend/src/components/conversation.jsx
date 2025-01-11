@@ -1,34 +1,31 @@
+
 import { useState, useEffect } from 'react';
 
-const Conversation = ({ chat, onSendMessage }) => {
+const Conversation = ({ chat }) => {
   const [messages, setMessages] = useState([]);
   const [messageContent, setMessageContent] = useState('');
-  
-  useEffect(() => {
-    if (chat) {
-      // Fetch messages for the selected chat
-      const fetchMessages = async () => {
-        try {
-          const response = await fetch(`http://localhost:5000/api/chats/messages/${chat._id}`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            },
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            setMessages(data);
-          } else {
-            alert('Failed to load messages');
-          }
-        } catch (error) {
-          console.error('Error fetching messages:', error);
-        }
-      };
 
-      fetchMessages();
-    }
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/chats/messages/${chat._id}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setMessages(data);
+        } else {
+          alert('Failed to load messages');
+        }
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+      }
+    };
+
+    if (chat) fetchMessages();
   }, [chat]);
 
   const handleSendMessage = async () => {
@@ -38,16 +35,13 @@ const Conversation = ({ chat, onSendMessage }) => {
     if (!token) return alert('Please log in first');
 
     try {
-      const response = await fetch('http://localhost:5000/api/messages', {
+      const response = await fetch('http://localhost:5000/api/chats/message', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          chatId: chat._id,
-          content: messageContent,
-        }),
+        body: JSON.stringify({ chatId: chat._id, content: messageContent }),
       });
 
       const newMessage = await response.json();
@@ -63,14 +57,19 @@ const Conversation = ({ chat, onSendMessage }) => {
     }
   };
 
+  const participantName =
+    chat.sender._id === localStorage.getItem('userId') ? chat.recipient.name : chat.sender.name;
+
   return (
     <div className="p-4 bg-gray-100 rounded-lg shadow-md max-h-screen overflow-auto">
-      <h3 className="text-xl font-semibold text-gray-700 mb-4">Chat with {chat?.recipient?.name || chat?.sender?.name}</h3>
+      <h3 className="text-xl font-semibold text-gray-700 mb-4">Chat with {participantName}</h3>
 
       <div className="messages overflow-auto max-h-96">
         {messages.map((message) => (
           <div key={message._id} className="message p-3 mb-2 bg-white rounded-md shadow-sm">
-            <p><strong>{message.sender.name}:</strong> {message.content}</p>
+            <p>
+              <strong>{message.sender.name}:</strong> {message.content}
+            </p>
           </div>
         ))}
       </div>
