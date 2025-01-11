@@ -80,6 +80,12 @@ const Navbar = () => {
                 </button>
               </Link>
 
+              <Link to="/friends">
+                <button className="btn btn-primary btn-sm hover:btn-accent">
+                  Friends
+                </button>
+              </Link>
+
               {userName && (
                 <span className="text-sm font-medium">
                    {userName}

@@ -5,6 +5,7 @@ import LoginForm from './pages/LoginForm';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import ChatPage from './pages/ChatPage';
+import FriendsPage from './pages/FriendsPage';
 
 function App() {
 
@@ -19,6 +20,7 @@ function App() {
           <Route path="/ChatPage" element={ <ChatPage/>} />
           <Route path="/login" element={<LoginForm />} />
           <Route path="/register" element={<RegisterForm />} />
+          <Route path="/friends" element={<FriendsPage />} />
           <Route path="/" element={<RegisterForm />} />
         </Routes>
       </div>
