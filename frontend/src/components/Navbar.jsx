@@ -68,17 +68,15 @@ const Navbar = () => {
             <>
               {/* After Login: Logout */}
 
-              <Link to="/Home">
+              
+
+              <Link to="/second-home">
                 <button className="btn btn-primary btn-sm hover:btn-accent">
-                  Home
+                  Home 
                 </button>
               </Link>
 
-              <Link to="/ChatPage">
-                <button className="btn btn-primary btn-sm hover:btn-accent">
-                  Chats
-                </button>
-              </Link>
+              
 
               <Link to="/friends">
                 <button className="btn btn-primary btn-sm hover:btn-accent">
