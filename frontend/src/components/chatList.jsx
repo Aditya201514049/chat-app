@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 
 const ChatList = ({ onChatSelect }) => {
   const [chatRooms, setChatRooms] = useState([]);
+  const [selectedChatId, setSelectedChatId] = useState(null); // State to track the selected chat
 
   useEffect(() => {
     const fetchChatRooms = async () => {
@@ -27,28 +28,36 @@ const ChatList = ({ onChatSelect }) => {
     fetchChatRooms(); // Fetch chats when the component loads
   }, []);
 
+  const handleChatSelect = (room) => {
+    setSelectedChatId(room._id); // Set the selected chat ID
+    onChatSelect(room); // Notify parent about the selected chat
+  };
+
   return (
     <div className="space-y-4">
       {chatRooms.length > 0 ? (
         chatRooms.map((room) => (
           <div
             key={room._id}
-            className="card bg-white shadow-lg border border-gray-200 rounded-lg p-4 hover:shadow-xl hover:bg-gray-50 transition cursor-pointer"
-            onClick={() => onChatSelect(room)} // Notify parent about the selected chat
+            className={`card shadow-lg border rounded-lg p-4 cursor-pointer transition ${
+              selectedChatId === room._id
+                ? "bg-blue-100 border-blue-400" // Highlight the selected chat
+                : "bg-white border-gray-200 hover:shadow-xl hover:bg-gray-50"
+            }`}
+            onClick={() => handleChatSelect(room)}
           >
             <div className="flex items-center">
               <div className="avatar placeholder w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center mr-4">
                 <span className="text-lg font-bold">
-                  {room.recipient.name.charAt(0)}
+                  {room.otherUser.name.charAt(0)}
                 </span>
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-gray-700">
-                  Chat with: {room.recipient.name}
+                   {room.otherUser.name}
                 </h3>
                 <p className="text-sm text-gray-500">
-                  Started on:{" "}
-                  {new Date(room.createdAt).toLocaleDateString()}
+                  Started on: {new Date(room.createdAt).toLocaleDateString()}
                 </p>
               </div>
             </div>

@@ -39,6 +39,10 @@ const LoginForm = () => {
         console.log("Token saved in localStorage:", localStorage.getItem("token")); // Debugging
         //alert("Login successful!");
 
+        
+        localStorage.setItem("userId", data._id); // Save userId here
+        console.log("Login successful. userId stored:", data._id);
+        
         setFormData({ email: "", password: "" }); // Clear form
 
         navigate("/second-home")
