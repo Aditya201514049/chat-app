@@ -2,6 +2,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+// Define 4 subtle background colors
+const subtleColors = [
+  "#E0F7FA", // Light Cyan
+  "#F1F8E9", // Light Green
+  "#FFF3E0", // Light Orange
+  "#E8EAF6", // Light Indigo
+];
+
 const FriendsPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,18 +69,24 @@ const FriendsPage = () => {
     }
   };
 
+  // Function to randomly pick a color for the card
+  const getRandomColor = (index) => {
+    const colorIndex = index % subtleColors.length;
+    return subtleColors[colorIndex];
+  };
+
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
-      {/* Changed background color of the page */}
       <h2 className="text-3xl font-semibold text-center mb-8">Friends</h2>
       {loading ? (
         <p className="text-center text-lg">Loading...</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {users.map((user) => (
+          {users.map((user, index) => (
             <div
               key={user._id}
-              className="card bg-white shadow-lg rounded-lg overflow-hidden transition-transform duration-300 ease-in-out transform hover:scale-105"
+              className="card shadow-lg rounded-lg overflow-hidden transition-transform duration-300 ease-in-out transform hover:scale-105"
+              style={{ backgroundColor: getRandomColor(index) }} // Apply different color for each card
             >
               <figure className="flex justify-center items-center p-4">
                 <img
