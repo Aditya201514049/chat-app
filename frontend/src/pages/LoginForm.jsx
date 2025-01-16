@@ -45,7 +45,7 @@ const LoginForm = () => {
         
         setFormData({ email: "", password: "" }); // Clear form
 
-        navigate("/second-home")
+        navigate("/home")
       } else {
         setError(data.message || "Invalid Email or Password");
       }

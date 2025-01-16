@@ -1,4 +1,5 @@
-import React, {useEffect, useState} from "react";
+
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 const Navbar = () => {
@@ -6,31 +7,31 @@ const Navbar = () => {
   const [userName, setUserName] = useState(""); // State to store the user's name
   const token = localStorage.getItem("token"); // Check if token exists
 
-    // Fetch user info
-    useEffect(() => {
-      const fetchUserInfo = async () => {
-        if (token) {
-          try {
-            const response = await fetch("http://localhost:5000/api/users/me", {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            });
-  
-            if (response.ok) {
-              const data = await response.json();
-              setUserName(data.name); // Set the user's name
-            } else {
-              console.error("Failed to fetch user info");
-            }
-          } catch (error) {
-            console.error("Error:", error);
+  // Fetch user info
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      if (token) {
+        try {
+          const response = await fetch("http://localhost:5000/api/users/me", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setUserName(data.name); // Set the user's name
+          } else {
+            console.error("Failed to fetch user info");
           }
+        } catch (error) {
+          console.error("Error:", error);
         }
-      };
-  
-      fetchUserInfo();
-    }, [token]);
+      }
+    };
+
+    fetchUserInfo();
+  }, [token]);
 
   // Logout function
   const handleLogout = () => {
@@ -39,8 +40,8 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-blue-600 text-white py-4 shadow-md">
-      <div className="container mx-auto flex justify-between items-center">
+    <nav className="fixed top-0 w-full bg-blue-600 text-white py-3 shadow-md z-50">
+      <div className="container mx-auto flex justify-between items-center px-4">
         {/* Chat App Heading */}
         <h1 className="text-2xl font-bold">
           <Link to="/" className="hover:underline">
@@ -66,17 +67,12 @@ const Navbar = () => {
             </>
           ) : (
             <>
-              {/* After Login: Logout */}
-
-              
-
-              <Link to="/second-home">
+              {/* After Login: Navigation Links and Logout */}
+              <Link to="/home">
                 <button className="btn btn-primary btn-sm hover:btn-accent">
-                  Home 
+                  Home
                 </button>
               </Link>
-
-              
 
               <Link to="/friends">
                 <button className="btn btn-primary btn-sm hover:btn-accent">
@@ -86,7 +82,7 @@ const Navbar = () => {
 
               {userName && (
                 <span className="text-sm font-medium">
-                   {userName}
+                  {userName}
                 </span>
               )}
 

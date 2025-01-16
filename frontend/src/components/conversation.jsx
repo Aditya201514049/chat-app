@@ -8,7 +8,6 @@ const Conversation = ({ chatId }) => {
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef(null);
 
-
   // Fetch messages when chatId changes
   useEffect(() => {
     const fetchMessages = async () => {
@@ -92,12 +91,7 @@ const Conversation = ({ chatId }) => {
     );
   }
 
-  const userId = localStorage.getItem("userId"); // Get logged-in user's ID from localStorage
-   // Debugging userId
-   console.log("userId from localStorage:", userId);
-   if (!userId) {
-     console.warn("userId is not stored in localStorage. Please log in first.");
-   }
+  const userId = localStorage.getItem("userId");
 
   return (
     <div className="flex flex-col h-full bg-gray-100 rounded-lg shadow-md">
@@ -134,7 +128,7 @@ const Conversation = ({ chatId }) => {
       </div>
 
       {/* Input Section */}
-      <div className="p-4 border-t border-gray-300">
+      <div className="sticky bottom-0 p-4 border-t border-gray-300 bg-gray-100">
         <div className="flex items-center space-x-2">
           <input
             type="text"

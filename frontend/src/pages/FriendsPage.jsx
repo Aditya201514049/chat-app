@@ -52,7 +52,7 @@ const FriendsPage = () => {
 
       if (response.ok) {
         // Redirect to HomePage with selected chat
-        navigate("/second-home", { state: { selectedChat: chat } });
+        navigate("/home", { state: { selectedChat: chat } });
       } else {
         alert("Error creating chat");
       }
