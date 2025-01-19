@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 
 const Conversation = ({ chatId }) => {
@@ -80,6 +79,14 @@ const Conversation = ({ chatId }) => {
     setIsSending(false);
   };
 
+  // Handle Enter key press for sending a message
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !isSending) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
   // Render fallback if no chat is selected
   if (!chatId) {
     return (
@@ -134,6 +141,7 @@ const Conversation = ({ chatId }) => {
             type="text"
             value={messageContent}
             onChange={(e) => setMessageContent(e.target.value)}
+            onKeyDown={handleKeyDown} // Add Enter key press handling
             className="flex-1 p-2 border border-gray-300 rounded-md"
             placeholder="Type a message"
           />
