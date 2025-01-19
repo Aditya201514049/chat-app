@@ -1,6 +1,6 @@
 
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import RegisterForm from "./pages/RegisterForm";
 import LoginForm from "./pages/LoginForm";
 import Navbar from "./components/Navbar";
@@ -21,8 +21,13 @@ function App() {
           <Route path="/login" element={<LoginForm />} />
           <Route path="/register" element={<RegisterForm />} />
           <Route path="/friends" element={<FriendsPage />} />
-          <Route path="/" element={<RegisterForm />} />
           <Route path="/home" element={<HomePage2 />} />
+          
+          {/* Dynamic route based on authentication */}
+          <Route
+            path="/"
+            element={isAuthenticated ? <HomePage2 /> : <RegisterForm />}
+          />
         </Routes>
       </div>
     </Router>

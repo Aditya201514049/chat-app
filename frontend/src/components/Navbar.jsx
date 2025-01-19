@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 const Navbar = () => {
   const navigate = useNavigate();
   const [userName, setUserName] = useState(""); // State to store the user's name
+  const [loading, setLoading] = useState(true); // Loading state to handle the asynchronous user info fetching
   const token = localStorage.getItem("token"); // Check if token exists
 
   // Fetch user info
@@ -28,6 +29,7 @@ const Navbar = () => {
           console.error("Error:", error);
         }
       }
+      setLoading(false); // Set loading to false after fetching is complete
     };
 
     fetchUserInfo();
@@ -39,14 +41,23 @@ const Navbar = () => {
     navigate("/login"); // Redirect to login page
   };
 
+  // Loading spinner or loading state
+  if (loading) {
+    return (
+      <nav className="fixed top-0 w-full bg-blue-600 text-white py-3 shadow-md z-50">
+        <div className="container mx-auto flex justify-between items-center px-4">
+          <h1 className="text-2xl font-bold">Loading...</h1>
+        </div>
+      </nav>
+    );
+  }
+
   return (
     <nav className="fixed top-0 w-full bg-blue-600 text-white py-3 shadow-md z-50">
       <div className="container mx-auto flex justify-between items-center px-4">
         {/* Chat App Heading */}
         <h1 className="text-2xl font-bold">
-          <Link to="/" className="hover:underline">
-            Chat App
-          </Link>
+          Chat App
         </h1>
 
         {/* Navigation Links */}
