@@ -1,5 +1,7 @@
 
 import React, { useState } from "react";
+// Store the API URL in a variable at the top
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const RegisterForm = () => {
   const [formData, setFormData] = useState({
@@ -16,7 +18,7 @@ const RegisterForm = () => {
     e.preventDefault();
 
     try {
-      const response = await fetch("http://localhost:5000/api/users/register", {
+      const response = await fetch(`${API_URL}/api/users/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,6 +1,8 @@
 
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+// Store the API URL in a variable at the top
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -13,7 +15,7 @@ const Navbar = () => {
     const fetchUserInfo = async () => {
       if (token) {
         try {
-          const response = await fetch("http://localhost:5000/api/users/me", {
+          const response = await fetch(`${API_URL}/api/users/me`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },

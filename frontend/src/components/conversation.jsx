@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+// Store the API URL in a variable at the top
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const Conversation = ({ chatId }) => {
   const [messages, setMessages] = useState([]);
@@ -12,7 +14,7 @@ const Conversation = ({ chatId }) => {
     const fetchMessages = async () => {
       try {
         const response = await fetch(
-          `http://localhost:5000/api/chats/messages/${chatId}`,
+          `${API_URL}/api/chats/messages/${chatId}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,

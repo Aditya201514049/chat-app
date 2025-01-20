@@ -1,6 +1,8 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+// Store the API URL in a variable at the top
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 // Define 4 subtle background colors
 const subtleColors = [
@@ -20,7 +22,7 @@ const FriendsPage = () => {
       try {
         const token = localStorage.getItem("token");
         const response = await fetch(
-          "http://localhost:5000/api/users/profiles",
+          `${API_URL}/api/users/profiles`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

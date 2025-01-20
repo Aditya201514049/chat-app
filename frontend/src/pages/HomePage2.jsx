@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom"; // useLocation for accessing pas
 import ChatList from "../components/chatList";
 import Conversation from "../components/conversation";
 
+
 const HomePage2 = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const location = useLocation(); // To access passed state (selectedChat)
