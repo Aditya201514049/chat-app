@@ -55,7 +55,7 @@ const Conversation = ({ chatId }) => {
     if (!token) return alert("Please log in first");
 
     try {
-      const response = await fetch("http://localhost:5000/api/chats/message", {
+      const response = await fetch(`${API_URL}/api/chats/message`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
