@@ -49,7 +49,7 @@ const FriendsPage = () => {
   const handleCreateChat = async (recipientId) => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/chats/create", {
+      const response = await fetch(`${API_URL}/api/chats/create`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
