@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from "react";
+import io from "socket.io-client";
 
 const Conversation = ({ chatId }) => {
   const [messages, setMessages] = useState([]);
   const [messageContent, setMessageContent] = useState("");
   const [error, setError] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [socket, setSocket] = useState(null); // Socket.io state
   const messagesEndRef = useRef(null);
 
   // Fetch messages when chatId changes
@@ -36,6 +38,25 @@ const Conversation = ({ chatId }) => {
     if (chatId) fetchMessages(); // Fetch messages only if chatId is available
   }, [chatId]);
 
+  // Set up Socket.io connection
+  useEffect(() => {
+    if (!chatId) return; // Don't connect if no chat is selected
+
+    const socketConnection = io("http://localhost:5000"); // Connect to Socket.io server
+
+    socketConnection.on("receiveMessage", (message) => {
+      setMessages((prevMessages) => [...prevMessages, message]);
+    });
+
+    setSocket(socketConnection);
+
+    return () => {
+      if (socketConnection) {
+        socketConnection.disconnect(); // Disconnect socket on cleanup
+      }
+    };
+  }, [chatId]);
+
   // Scroll to the latest message when messages update
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -44,7 +65,7 @@ const Conversation = ({ chatId }) => {
   }, [messages]);
 
   // Handle sending a message
-  const handleSendMessage = async () => {
+  const handleSendMessage = () => {
     if (!messageContent.trim()) return;
 
     setIsSending(true);
@@ -52,30 +73,20 @@ const Conversation = ({ chatId }) => {
 
     if (!token) return alert("Please log in first");
 
-    try {
-      const response = await fetch("http://localhost:5000/api/chats/message", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ chatId, content: messageContent }),
-      });
+    const message = {
+      chatId,
+      content: messageContent,
+      sender: localStorage.getItem("userId"), // Assuming userId is stored in localStorage
+    };
 
-      const newMessage = await response.json();
-
-      if (response.ok) {
-        setMessages((prevMessages) => [...prevMessages, newMessage]);
-        setMessageContent(""); // Clear input after sending
-        setError(""); // Clear errors on success
-      } else {
-        setError("Error sending message.");
-      }
-    } catch (error) {
-      console.error("Error sending message:", error);
-      setError("An error occurred while sending the message.");
+    // Send message via Socket.io
+    if (socket) {
+      socket.emit("sendMessage", message);
     }
 
+    // Clear input after sending
+    setMessageContent("");
+    setError(""); // Clear errors on success
     setIsSending(false);
   };
 
