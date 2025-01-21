@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 // Store the API URL in a variable at the top
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -98,9 +99,9 @@ const RegisterForm = () => {
         <div className="text-center">
           <p>
             Already have an account?{" "}
-            <a href="/login" className="link link-secondary">
+            <Link to="/login" className="link link-secondary">
               Login here
-            </a>
+            </Link>
           </p>
         </div>
       </div>
