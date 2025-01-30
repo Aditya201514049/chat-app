@@ -1,3 +1,5 @@
+
+
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import RegisterForm from "./pages/RegisterForm";
@@ -13,8 +15,9 @@ function App() {
     <Router>
       {/* Fixed Navbar */}
       <Navbar />
+
       {/* Content Section with padding to avoid overlap */}
-      <div className="mt-[64px]">
+      <div className="mt-[64px] relative min-h-screen overflow-hidden">
         <Routes>
           {/* Define routes */}
           <Route path="/login" element={<LoginForm />} />
@@ -29,6 +32,8 @@ function App() {
           />
         </Routes>
       </div>
+
+      {/* Optionally apply any overflow: hidden or fixed positioning for main chat section */}
     </Router>
   );
 }

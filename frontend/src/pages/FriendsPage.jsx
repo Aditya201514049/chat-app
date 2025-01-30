@@ -1,16 +1,10 @@
 
+
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-// Store the API URL in a variable at the top
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-// Define 4 subtle background colors
-const subtleColors = [
-  "#E0F7FA", // Light Cyan
-  "#F1F8E9", // Light Green
-  "#FFF3E0", // Light Orange
-  "#E8EAF6", // Light Indigo
-];
+const API_URL = "http://localhost:5000";
 
 const FriendsPage = () => {
   const [users, setUsers] = useState([]);
@@ -21,14 +15,11 @@ const FriendsPage = () => {
     const fetchUsers = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(
-          `${API_URL}/api/users/profiles`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await fetch(`${API_URL}/api/users/profiles`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         if (response.ok) {
           const data = await response.json();
@@ -61,7 +52,6 @@ const FriendsPage = () => {
       const chat = await response.json();
 
       if (response.ok) {
-        // Redirect to HomePage with selected chat
         navigate("/home", { state: { selectedChat: chat } });
       } else {
         alert("Error creating chat");
@@ -71,38 +61,33 @@ const FriendsPage = () => {
     }
   };
 
-  // Function to randomly pick a color for the card
-  const getRandomColor = (index) => {
-    const colorIndex = index % subtleColors.length;
-    return subtleColors[colorIndex];
-  };
-
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <h2 className="text-3xl font-semibold text-center mb-8">Friends</h2>
+    <div className="p-6 min-h-screen bg-blue-50">
+      <h2 className="text-3xl font-extrabold text-purple-800 mb-6 text-center">
+        Friends List
+      </h2>
       {loading ? (
-        <p className="text-center text-lg">Loading...</p>
+        <p className="text-center text-lg text-blue-500">Loading...</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {users.map((user, index) => (
+          {users.map((user) => (
             <div
               key={user._id}
-              className="card shadow-lg rounded-lg overflow-hidden transition-transform duration-300 ease-in-out transform hover:scale-105"
-              style={{ backgroundColor: getRandomColor(index) }} // Apply different color for each card
+              className="bg-white rounded-2xl shadow-lg p-4 border-l-8 transition-transform transform hover:scale-105 hover:shadow-xl border-purple-400"
             >
-              <figure className="flex justify-center items-center p-4">
+              <div className="flex flex-col items-center">
                 <img
                   src={user.avatar || "https://via.placeholder.com/150"}
                   alt={user.name}
-                  className="rounded-full w-24 h-24 object-cover"
+                  className="rounded-full w-20 h-20 object-cover border-4 border-gray-300"
                 />
-              </figure>
-              <div className="card-body text-center">
-                <h3 className="text-xl font-semibold">{user.name}</h3>
-                <p className="text-sm text-gray-500 mb-4">Active Now</p>
+                <h3 className="text-xl font-semibold text-gray-800 mt-3">
+                  {user.name}
+                </h3>
+                <p className="text-sm text-gray-600">Active Now</p>
                 <button
                   onClick={() => handleCreateChat(user._id)}
-                  className="btn btn-primary w-full"
+                  className="btn btn-primary w-full mt-3"
                 >
                   Start Chat
                 </button>

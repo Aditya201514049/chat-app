@@ -1,6 +1,7 @@
+
 import { useState, useEffect, useRef } from "react";
-// Store the API URL in a variable at the top
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+const API_URL = "http://localhost:5000";
 
 const Conversation = ({ chatId }) => {
   const [messages, setMessages] = useState([]);
@@ -9,23 +10,19 @@ const Conversation = ({ chatId }) => {
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Fetch messages when chatId changes
   useEffect(() => {
     const fetchMessages = async () => {
       try {
-        const response = await fetch(
-          `${API_URL}/api/chats/messages/${chatId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
+        const response = await fetch(`${API_URL}/api/chats/messages/${chatId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
 
         if (response.ok) {
           const data = await response.json();
           setMessages(data);
-          setError(""); // Clear errors on success
+          setError("");
         } else {
           setError("Failed to load messages. Please try again.");
         }
@@ -35,17 +32,15 @@ const Conversation = ({ chatId }) => {
       }
     };
 
-    if (chatId) fetchMessages(); // Fetch messages only if chatId is available
+    if (chatId) fetchMessages();
   }, [chatId]);
 
-  // Scroll to the latest message when messages update
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
-  // Handle sending a message
   const handleSendMessage = async () => {
     if (!messageContent.trim()) return;
 
@@ -68,8 +63,8 @@ const Conversation = ({ chatId }) => {
 
       if (response.ok) {
         setMessages((prevMessages) => [...prevMessages, newMessage]);
-        setMessageContent(""); // Clear input after sending
-        setError(""); // Clear errors on success
+        setMessageContent("");
+        setError("");
       } else {
         setError("Error sending message.");
       }
@@ -81,7 +76,6 @@ const Conversation = ({ chatId }) => {
     setIsSending(false);
   };
 
-  // Handle Enter key press for sending a message
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !isSending) {
       e.preventDefault();
@@ -89,13 +83,14 @@ const Conversation = ({ chatId }) => {
     }
   };
 
-  // Render fallback if no chat is selected
   if (!chatId) {
     return (
-      <div className="p-4">
-        <p className="text-center text-gray-500">
-          No chat selected. Please select a chat to start messaging.
-        </p>
+      <div className="flex items-center justify-center h-full bg-gradient-to-br from-blue-100 to-purple-200">
+        <div className="p-6 bg-base-300 rounded-lg shadow-lg text-center">
+          <p className="text-lg font-semibold text-gray-700">
+            Select a chat to start a conversation.
+          </p>
+        </div>
       </div>
     );
   }
@@ -103,26 +98,22 @@ const Conversation = ({ chatId }) => {
   const userId = localStorage.getItem("userId");
 
   return (
-    <div className="flex flex-col h-full bg-gray-100 rounded-lg shadow-md">
+    <div className="flex flex-col h-full bg-base-200 rounded-lg shadow-xl">
       {/* Messages Section */}
-      <div className="flex-1 p-4 overflow-y-auto space-y-4">
+      <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-base-300 rounded-t-lg">
         {error && <p className="text-center text-red-500">{error}</p>}
 
         {messages.length > 0 ? (
           messages.map((message) => (
             <div
               key={message._id}
-              className={`flex ${
-                message.sender === userId
-                  ? "justify-end" // Align sent messages to the right
-                  : "justify-start" // Align received messages to the left
-              }`}
+              className={`flex ${message.sender === userId ? "justify-end" : "justify-start"}`}
             >
               <div
                 className={`p-3 rounded-lg shadow-md max-w-[75%] ${
                   message.sender === userId
-                    ? "bg-blue-500 text-white" // Sent message styling
-                    : "bg-green-200 text-gray-800" // Received message styling
+                    ? "bg-secondary text-secondary-content"
+                    : "bg-accent text-accent-content"
                 }`}
               >
                 <p>{message.content}</p>
@@ -137,20 +128,20 @@ const Conversation = ({ chatId }) => {
       </div>
 
       {/* Input Section */}
-      <div className="sticky bottom-0 p-4 border-t border-gray-300 bg-gray-100">
+      <div className="sticky bottom-0 p-4 border-t border-base-300 bg-gray-100 rounded-b-lg">
         <div className="flex items-center space-x-2">
           <input
             type="text"
             value={messageContent}
             onChange={(e) => setMessageContent(e.target.value)}
-            onKeyDown={handleKeyDown} // Add Enter key press handling
-            className="flex-1 p-2 border border-gray-300 rounded-md"
-            placeholder="Type a message"
+            onKeyDown={handleKeyDown}
+            className="flex-1 p-2 border border-black-300 rounded-md bg-base-200 text-base-content placeholder-base-400 focus:ring-2 focus:ring-secondary"
+            placeholder="Type a message..."
           />
           <button
             onClick={handleSendMessage}
             disabled={isSending}
-            className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+            className="p-2 px-4 bg-primary text-white rounded-md hover:bg-primary-focus transition-all"
           >
             {isSending ? "Sending..." : "Send"}
           </button>

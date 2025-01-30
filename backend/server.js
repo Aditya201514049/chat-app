@@ -10,7 +10,7 @@ connectDB();
 
 const app = express();
 
-app.use(cors({ origin: 'https://chat-app-1-yeks.onrender.com' }));
+app.use(cors({ origin: ['http://localhost:5173' ]}));
 app.use(express.json()); // Middleware to parse JSON requests
 
 // Define the root route for basic HTTP requests (optional, just to avoid "Cannot GET /")
