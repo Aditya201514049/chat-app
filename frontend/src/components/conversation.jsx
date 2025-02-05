@@ -1,9 +1,10 @@
 
+
 import { useState, useEffect, useRef } from "react";
 
 const API_URL = "http://localhost:5000";
 
-const Conversation = ({ chatId }) => {
+const Conversation = ({ chatId, onBack }) => {
   const [messages, setMessages] = useState([]);
   const [messageContent, setMessageContent] = useState("");
   const [error, setError] = useState("");
@@ -99,7 +100,16 @@ const Conversation = ({ chatId }) => {
 
   return (
     <div className="flex flex-col h-full bg-base-200 rounded-lg shadow-xl">
-      {/* Messages Section */}
+      
+      {window.innerWidth < 768 && (
+        <div className="sticky top-0 z-20 bg-white shadow-md p-2">
+          <button onClick={onBack} className="text-blue-500 font-semibold">
+            ← Back to Chats
+          </button>
+        </div>
+      )}
+
+      
       <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-base-300 rounded-t-lg">
         {error && <p className="text-center text-red-500">{error}</p>}
 
@@ -127,7 +137,7 @@ const Conversation = ({ chatId }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Section */}
+      
       <div className="sticky bottom-0 p-4 border-t border-base-300 bg-gray-100 rounded-b-lg">
         <div className="flex items-center space-x-2">
           <input
@@ -152,3 +162,6 @@ const Conversation = ({ chatId }) => {
 };
 
 export default Conversation;
+
+
+
