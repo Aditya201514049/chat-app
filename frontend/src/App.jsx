@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import RegisterForm from "./pages/RegisterForm";
 import LoginForm from "./pages/LoginForm";
 import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 import FriendsPage from "./pages/FriendsPage";
 import HomePage2 from "./pages/HomePage2";
 
@@ -13,29 +14,27 @@ function App() {
 
   return (
     <Router>
-      {/* Fixed Navbar */}
-      <Navbar />
+      {/* Use flex and min-h-screen on the outermost div */}
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
 
-      {/* Content Section with padding to avoid overlap */}
-      <div className="mt-[64px] relative min-h-screen overflow-hidden">
-        <Routes>
-          {/* Define routes */}
-          <Route path="/login" element={<LoginForm />} />
-          <Route path="/register" element={<RegisterForm />} />
-          <Route path="/friends" element={<FriendsPage />} />
-          <Route path="/home" element={<HomePage2 />} />
-          
-          {/* Dynamic route based on authentication */}
-          <Route
-            path="/"
-            element={isAuthenticated ? <HomePage2 /> : <RegisterForm />}
-          />
-        </Routes>
+        {/* Main content */}
+        <div className="flex-1 mt-20">
+          <Routes>
+            <Route path="/login" element={<LoginForm />} />
+            <Route path="/register" element={<RegisterForm />} />
+            <Route path="/friends" element={<FriendsPage />} />
+            <Route path="/home" element={<HomePage2 />} />
+            <Route path="/" element={isAuthenticated ? <HomePage2 /> : <RegisterForm />} />
+          </Routes>
+        </div>
+
+        {/* Footer stays at the bottom */}
+        <Footer />
       </div>
-
-      {/* Optionally apply any overflow: hidden or fixed positioning for main chat section */}
     </Router>
   );
 }
+
 
 export default App;
