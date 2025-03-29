@@ -15,6 +15,7 @@ const RegisterForm = () => {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -37,29 +38,14 @@ const RegisterForm = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // Auto login after registration
-        const loginResponse = await fetch(`${API_URL}/api/users/login`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: formData.email,
-            password: formData.password,
-          }),
-        });
-
-        if (loginResponse.ok) {
-          const loginData = await loginResponse.json();
-          localStorage.setItem("token", loginData.token);
-          localStorage.setItem("userId", loginData._id);
-          setFormData({ name: "", email: "", password: "" });
-          navigate("/home");
-        } else {
-          // If auto-login fails, still consider registration successful
-          setFormData({ name: "", email: "", password: "" });
+        // Instead of auto-login, show success popup
+        setFormData({ name: "", email: "", password: "" });
+        setShowSuccessPopup(true);
+        
+        // Auto redirect after 3 seconds
+        setTimeout(() => {
           navigate("/login");
-        }
+        }, 3000);
       } else {
         setError(data.message || "Registration failed. Please try again.");
       }
@@ -73,6 +59,48 @@ const RegisterForm = () => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-12rem)]">
+      {/* Success Popup */}
+      {showSuccessPopup && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+          <div className="w-full max-w-md p-6 rounded-xl shadow-lg" 
+               style={{ 
+                 backgroundColor: 'var(--color-bg-card)',
+                 borderColor: 'var(--color-border-light)',
+                 animation: 'bounce 0.5s'
+               }}>
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full mb-4" 
+                   style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)' }}>
+                <svg className="h-10 w-10" 
+                     style={{ color: 'var(--color-button-primary)' }}
+                     xmlns="http://www.w3.org/2000/svg" 
+                     fill="none" 
+                     viewBox="0 0 24 24" 
+                     stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--color-text-primary)' }}>
+                Registration Successful!
+              </h3>
+              <p className="mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+                Your account has been created successfully. You'll be redirected to the login page shortly.
+              </p>
+              <button
+                onClick={() => navigate("/login")}
+                className="w-full py-3 px-4 rounded-lg text-white font-medium transition-all duration-300"
+                style={{ 
+                  backgroundColor: 'var(--color-button-primary)',
+                  color: 'var(--color-text-message-mine)',
+                }}
+              >
+                Login Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div 
         className="w-full max-w-md p-8 space-y-6 rounded-xl shadow-lg transition-all duration-300"
         style={{ 
