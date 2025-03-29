@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSocket } from "../contexts/SocketContext";
 
-const Conversation = ({ chatId, onBack, chatName }) => {
+const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom }) => {
   const [messages, setMessages] = useState([]);
   const [messageContent, setMessageContent] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [initialFetchComplete, setInitialFetchComplete] = useState(false);
   
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -15,7 +16,7 @@ const Conversation = ({ chatId, onBack, chatName }) => {
   const userId = localStorage.getItem("userId");
   
   // Get socket context
-  const { socket, isConnected, joinChatRoom, sendMessage, startTyping, stopTyping } = useSocket();
+  const { socket, isConnected, joinChatRoom, startTyping, stopTyping } = useSocket();
 
   // Add a ref to track the current chat
   const currentChatIdRef = useRef(null);
@@ -23,6 +24,7 @@ const Conversation = ({ chatId, onBack, chatName }) => {
   const fetchMessages = async () => {
     setError("");
     try {
+      console.log(`Fetching messages for chat: ${chatId}`);
       const response = await fetch(`${API_URL}/api/chats/messages/${chatId}`, {
         method: "GET",
         headers: {
@@ -35,6 +37,7 @@ const Conversation = ({ chatId, onBack, chatName }) => {
       }
 
       const data = await response.json();
+      console.log(`Fetched ${data.length} messages for chat: ${chatId}`);
       
       // Update messages but don't replace any pending messages
       setMessages(prevMessages => {
@@ -61,9 +64,12 @@ const Conversation = ({ chatId, onBack, chatName }) => {
         return data;
       });
       
+      setInitialFetchComplete(true);
+      return data; // Return the messages for potential future use
     } catch (err) {
       console.error("Error fetching messages:", err);
       setError("Failed to load messages. Please try again.");
+      setInitialFetchComplete(true);
       // Re-throw so the promise rejection is passed to the caller
       throw err;
     }
@@ -74,7 +80,7 @@ const Conversation = ({ chatId, onBack, chatName }) => {
     if (!chatId) return;
     
     // Only fetch if this is a different chat than we already have
-    if (currentChatIdRef.current !== chatId) {
+    if (currentChatIdRef.current !== chatId || !initialFetchComplete) {
       currentChatIdRef.current = chatId;
       
       // Used a ref to track initial loading to avoid infinite loops
@@ -92,14 +98,29 @@ const Conversation = ({ chatId, onBack, chatName }) => {
           setLoading(false);
         });
     }
-  }, [chatId]); // Removed messages from dependency array to avoid loops
+  }, [chatId, initialFetchComplete]); // Only depend on chatId and initialFetchComplete
   
-  // Join the chat room when chat changes
+  // Join the chat room when chat changes or connection status changes
   useEffect(() => {
     if (chatId && isConnected) {
+      console.log(`Chat ID changed or connection status changed. Joining room: ${chatId}`);
       joinChatRoom(chatId);
     }
   }, [chatId, isConnected, joinChatRoom]);
+
+  // Re-fetch messages if we have joined the room and initial fetch was not complete
+  useEffect(() => {
+    if (hasJoinedRoom && chatId && !initialFetchComplete) {
+      console.log(`Room joined, forcing message refresh for ${chatId}`);
+      fetchMessages()
+        .then(() => {
+          setLoading(false);
+        })
+        .catch(() => {
+          setLoading(false);
+        });
+    }
+  }, [hasJoinedRoom, chatId, initialFetchComplete]);
   
   // Listen for new messages
   useEffect(() => {
@@ -107,6 +128,22 @@ const Conversation = ({ chatId, onBack, chatName }) => {
     
     const handleNewMessage = (newMessage) => {
       console.log("New message received via socket:", newMessage);
+      
+      // Ensure message has chatId property
+      if (!newMessage.chatId) {
+        console.error("Received message without chatId:", newMessage);
+        return;
+      }
+      
+      // Check if this message is for the current chat
+      const msgChatId = typeof newMessage.chatId === 'object' 
+          ? newMessage.chatId._id 
+          : newMessage.chatId;
+          
+      if (chatId !== msgChatId) {
+        console.log(`Message for different chat (${msgChatId}), current chat: ${chatId}`);
+        return;
+      }
       
       setMessages((prevMessages) => {
         // Track if we need to add this message
@@ -192,7 +229,7 @@ const Conversation = ({ chatId, onBack, chatName }) => {
       socket.off("typing", handleTyping);
       socket.off("stop typing", handleStopTyping);
     };
-  }, [socket]);
+  }, [socket, chatId]);
 
   // Scroll to bottom when messages change
   useEffect(() => {

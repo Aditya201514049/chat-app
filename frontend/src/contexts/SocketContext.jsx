@@ -57,6 +57,7 @@ export const SocketProvider = ({ children }) => {
 
     newSocket.on("connect_error", (error) => {
       console.error("Socket connection error:", error);
+      setIsConnected(false);
     });
 
     newSocket.on("error", (error) => {
@@ -108,9 +109,7 @@ export const SocketProvider = ({ children }) => {
     socket.emit("join chat", chatId);
   }, [socket, isConnected]);
 
-  // Send a message
-  // Note: We're now primarily using HTTP for message sending to avoid duplication
-  // This function is kept for compatibility but marked as deprecated
+  // Send a message - now using the HTTP approach from conversation.jsx
   const sendMessage = useCallback((messageData) => {
     if (!socket || !isConnected) {
       console.log("Cannot send message, socket not connected");
@@ -118,6 +117,7 @@ export const SocketProvider = ({ children }) => {
     }
     
     console.log("WARNING: Direct socket message sending is deprecated. Use HTTP endpoint instead.");
+    // Still emit for backward compatibility, but API calls are preferred
     socket.emit("new message", messageData);
     return true;
   }, [socket, isConnected]);

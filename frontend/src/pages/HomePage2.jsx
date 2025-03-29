@@ -9,6 +9,7 @@ const HomePage2 = () => {
   const location = useLocation();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768); // Check if it's mobile
   const { isConnected, joinChatRoom } = useSocket();
+  const [hasJoinedInitialRoom, setHasJoinedInitialRoom] = useState(false);
 
   // Update `isMobile` on window resize
   useEffect(() => {
@@ -24,14 +25,25 @@ const HomePage2 = () => {
   useEffect(() => {
     if (location.state && location.state.selectedChat) {
       setSelectedChat(location.state.selectedChat);
+      // Make sure we join the chat room when navigating from another page
+      if (isConnected && location.state.selectedChat?._id) {
+        console.log(`Joining chat room from navigation: ${location.state.selectedChat._id}`);
+        joinChatRoom(location.state.selectedChat._id);
+        
+        // Mark that we've joined a room initially if from friends page
+        if (location.state.fromFriendsPage) {
+          setHasJoinedInitialRoom(true);
+        }
+      }
     }
-  }, [location]);
+  }, [location, isConnected, joinChatRoom]);
 
   // When connection status changes, rejoin chat room if needed
   useEffect(() => {
     if (isConnected && selectedChat?._id) {
       console.log("Connection changed, rejoining chat room:", selectedChat._id);
       joinChatRoom(selectedChat._id);
+      setHasJoinedInitialRoom(true);
     }
   }, [isConnected, selectedChat, joinChatRoom]);
 
@@ -41,7 +53,9 @@ const HomePage2 = () => {
     
     // Make sure we join the chat room
     if (isConnected && chat?._id) {
+      console.log(`Joining chat room from selection: ${chat._id}`);
       joinChatRoom(chat._id);
+      setHasJoinedInitialRoom(true);
     }
   };
 
@@ -54,7 +68,10 @@ const HomePage2 = () => {
             <h1 className="text-xl font-semibold text-gray-800">Conversations</h1>
           </div>
           <div className="flex-1 overflow-y-auto">
-            <ChatList onChatSelect={handleChatSelect} />
+            <ChatList 
+              onChatSelect={handleChatSelect} 
+              selectedChatId={selectedChat?._id} 
+            />
           </div>
         </div>
 
@@ -65,6 +82,7 @@ const HomePage2 = () => {
               chatId={selectedChat._id} 
               onBack={() => setSelectedChat(null)} 
               chatName={selectedChat?.otherUser?.name || 'Chat'}
+              hasJoinedRoom={hasJoinedInitialRoom}
             />
           ) : (
             <div className="flex items-center justify-center h-full bg-gray-50">

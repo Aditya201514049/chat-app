@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../contexts/ThemeContext";
+import { useSocket } from "../contexts/SocketContext";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -10,6 +11,7 @@ const FriendsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const { joinChatRoom, isConnected } = useSocket();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -40,6 +42,16 @@ const FriendsPage = () => {
   const handleCreateChat = async (recipientId) => {
     try {
       const token = localStorage.getItem("token");
+      
+      // Show loading indicator for this specific user
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          user._id === recipientId 
+            ? { ...user, isLoading: true } 
+            : user
+        )
+      );
+      
       const response = await fetch(`${API_URL}/api/chats/create`, {
         method: "POST",
         headers: {
@@ -49,15 +61,38 @@ const FriendsPage = () => {
         body: JSON.stringify({ recipientId }),
       });
 
+      if (!response.ok) {
+        throw new Error("Error creating chat");
+      }
+      
       const chat = await response.json();
 
-      if (response.ok) {
-        navigate("/home", { state: { selectedChat: chat } });
-      } else {
-        console.error("Error creating chat");
+      // Pre-join the chat room before navigation if connected
+      if (isConnected && chat._id) {
+        console.log(`Pre-joining chat room ${chat._id} before navigation`);
+        joinChatRoom(chat._id);
+        
+        // Small delay to ensure the room is joined before navigation
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
+
+      navigate("/home", { 
+        state: { 
+          selectedChat: chat,
+          fromFriendsPage: true 
+        } 
+      });
     } catch (error) {
       console.error("Error:", error);
+      
+      // Remove loading state on error
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          user._id === recipientId 
+            ? { ...user, isLoading: false } 
+            : user
+        )
+      );
     }
   };
 
@@ -153,13 +188,20 @@ const FriendsPage = () => {
                   </div>
                   <button
                     onClick={() => handleCreateChat(user._id)}
+                    disabled={user.isLoading}
                     className="mt-4 w-full py-2 px-4 border-0 rounded-md shadow-sm text-sm font-medium transition-colors"
                     style={{ 
                       backgroundColor: 'var(--color-button-primary)',
                       color: 'var(--color-text-message-mine)',
+                      opacity: user.isLoading ? 0.7 : 1
                     }}
                   >
-                    Message
+                    {user.isLoading ? (
+                      <div className="flex justify-center items-center">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        Connecting...
+                      </div>
+                    ) : "Message"}
                   </button>
                 </div>
               ))}
