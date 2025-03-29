@@ -134,12 +134,12 @@ const RegisterForm = () => {
                   <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                 </svg>
               </div>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
+            <input
+              type="text"
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
                 className="pl-10 w-full p-3 rounded-lg transition-all border focus:ring focus:outline-none"
                 style={{ 
                   backgroundColor: 'var(--color-bg-input)',
@@ -147,8 +147,8 @@ const RegisterForm = () => {
                   borderColor: 'var(--color-border-input)',
                 }}
                 placeholder="John Doe"
-                required
-              />
+              required
+            />
             </div>
           </div>
 
@@ -167,12 +167,12 @@ const RegisterForm = () => {
                   <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                 </svg>
               </div>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
                 className="pl-10 w-full p-3 rounded-lg transition-all border focus:ring focus:outline-none"
                 style={{ 
                   backgroundColor: 'var(--color-bg-input)',
@@ -180,8 +180,8 @@ const RegisterForm = () => {
                   borderColor: 'var(--color-border-input)',
                 }}
                 placeholder="you@example.com"
-                required
-              />
+              required
+            />
             </div>
           </div>
 
@@ -199,12 +199,12 @@ const RegisterForm = () => {
                   <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                 </svg>
               </div>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
+            <input
+              type="password"
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
                 className="pl-10 w-full p-3 rounded-lg transition-all border focus:ring focus:outline-none"
                 style={{ 
                   backgroundColor: 'var(--color-bg-input)',
@@ -212,8 +212,8 @@ const RegisterForm = () => {
                   borderColor: 'var(--color-border-input)',
                 }}
                 placeholder="••••••••"
-                required
-              />
+              required
+            />
             </div>
             <p className="mt-1 text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
               Must be at least 6 characters

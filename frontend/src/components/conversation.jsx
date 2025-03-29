@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSocket } from "../contexts/SocketContext";
 
-const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom }) => {
+const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError }) => {
   const [messages, setMessages] = useState([]);
   const [messageContent, setMessageContent] = useState("");
   const [error, setError] = useState("");
@@ -24,16 +24,50 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom }) => {
   const fetchMessages = async () => {
     setError("");
     try {
+      const token = localStorage.getItem("token");
+      
+      if (!token) {
+        setError("Authentication token not found. Please log in again.");
+        if (onAuthError) onAuthError();
+        return [];
+      }
+      
       console.log(`Fetching messages for chat: ${chatId}`);
       const response = await fetch(`${API_URL}/api/chats/messages/${chatId}`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
+      if (response.status === 401) {
+        // This indicates an authentication issue
+        const errorData = await response.json();
+        console.log("Auth error:", errorData);
+        
+        if (errorData.code === 'USER_NOT_FOUND') {
+          setError("Your account appears to have been deleted. Please register again.");
+        } else if (errorData.code === 'TOKEN_EXPIRED') {
+          setError("Your session has expired. Please log in again.");
+        } else {
+          setError("Authentication failed. Please log in again.");
+        }
+        
+        // Clear stored credentials
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+        
+        if (onAuthError) onAuthError();
+        return [];
+      }
+
       if (!response.ok) {
-        throw new Error("Failed to fetch messages");
+        if (response.status === 404) {
+          setError("Chat not found. It may have been deleted.");
+        } else {
+          throw new Error("Failed to fetch messages");
+        }
+        return [];
       }
 
       const data = await response.json();
@@ -68,7 +102,11 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom }) => {
       return data; // Return the messages for potential future use
     } catch (err) {
       console.error("Error fetching messages:", err);
-      setError("Failed to load messages. Please try again.");
+      if (err.message === "Failed to fetch") {
+        setError("Network error. Please check your connection and try again.");
+      } else {
+        setError("Failed to load messages. Please try again.");
+      }
       setInitialFetchComplete(true);
       // Re-throw so the promise rejection is passed to the caller
       throw err;
@@ -251,6 +289,14 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom }) => {
       typingTimeoutRef.current = null;
     }
 
+    // Check authentication before proceeding
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setError("Authentication token not found. Please log in again.");
+      if (onAuthError) onAuthError();
+      return;
+    }
+
     // Generate a unique temp ID that we'll use for tracking
     const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
@@ -282,7 +328,7 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ 
           chatId, 
@@ -290,6 +336,37 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom }) => {
           tempId // Include tempId for correlation
         }),
       });
+
+      // Handle auth errors
+      if (response.status === 401) {
+        const errorData = await response.json();
+        console.log("Auth error when sending message:", errorData);
+        
+        // Mark the temporary message as failed
+        setMessages(prevMessages => 
+          prevMessages.map(msg => 
+            msg._id === tempId ? 
+            { ...msg, failed: true, pending: false } : 
+            msg
+          )
+        );
+        
+        // Show appropriate error
+        if (errorData.code === 'USER_NOT_FOUND') {
+          setError("Your account appears to have been deleted. Please register again.");
+        } else if (errorData.code === 'TOKEN_EXPIRED') {
+          setError("Your session has expired. Please log in again.");
+        } else {
+          setError("Authentication failed. Please log in again.");
+        }
+        
+        // Clear stored credentials
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+        
+        if (onAuthError) onAuthError();
+        return;
+      }
 
       if (!response.ok) {
         throw new Error("Failed to send message");
@@ -383,11 +460,16 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom }) => {
                   />
                 </svg>
               </button>
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-500">
+              <div className={`flex items-center justify-center w-8 h-8 rounded-full text-blue-500 ${chatName === 'Deleted User' ? 'bg-gray-200' : 'bg-blue-100'}`}>
                 <span className="text-sm font-bold">{chatName?.charAt(0)?.toUpperCase()}</span>
               </div>
-              <div>
+              <div className="flex items-center">
                 <h2 className="text-sm font-medium text-gray-900">{chatName}</h2>
+                {chatName === 'Deleted User' && (
+                  <span className="ml-2 px-1.5 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
+                    Deleted
+                  </span>
+                )}
               </div>
             </div>
           </div>

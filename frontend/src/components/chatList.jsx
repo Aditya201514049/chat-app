@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useSocket } from "../contexts/SocketContext";
 
-const ChatList = ({ onChatSelect }) => {
+const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
   const [chatRooms, setChatRooms] = useState([]);
-  const [selectedChatId, setSelectedChatId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   
@@ -14,23 +13,69 @@ const ChatList = ({ onChatSelect }) => {
 
   const fetchChatRooms = async () => {
     setLoading(true);
+    setError("");
+    
     try {
+      const token = localStorage.getItem("token");
+      
+      if (!token) {
+        setError("Authentication token not found. Please log in again.");
+        setLoading(false);
+        if (onAuthError) onAuthError();
+        return;
+      }
+      
       const response = await fetch(`${API_URL}/api/chats/getchats`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
+      if (response.status === 401) {
+        // This indicates an authentication issue - could be invalid token,
+        // expired token, or deleted user
+        const errorData = await response.json();
+        console.log("Auth error:", errorData);
+        
+        if (errorData.code === 'USER_NOT_FOUND') {
+          setError("Your account appears to have been deleted. Please register again.");
+        } else if (errorData.code === 'TOKEN_EXPIRED') {
+          setError("Your session has expired. Please log in again.");
+        } else {
+          setError("Authentication failed. Please log in again.");
+        }
+        
+        // Clear stored credentials
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+        
+        setChatRooms([]);
+        
+        if (onAuthError) onAuthError();
+        return;
+      }
+      
       if (!response.ok) {
         throw new Error("Failed to fetch chats");
       }
 
       const data = await response.json();
-      setChatRooms(data);
-      setError("");
+      
+      // Filter out any invalid chat data
+      const validChats = data.filter(chat => 
+        chat && chat._id && 
+        (chat.otherUser || (chat.sender && chat.recipient))
+      );
+      
+      setChatRooms(validChats);
     } catch (error) {
       console.error("Failed to fetch chat rooms", error);
-      setError("Failed to load chats. Please try again.");
+      if (error.message === "Failed to fetch") {
+        setError("Network error. Please check your connection and try again.");
+      } else {
+        setError("Failed to load chats. Please try again.");
+      }
+      setChatRooms([]);
     } finally {
       setLoading(false);
     }
@@ -170,15 +215,25 @@ const ChatList = ({ onChatSelect }) => {
   }, [socket]);
 
   const handleChatSelect = (room) => {
-    setSelectedChatId(room._id);
     onChatSelect(room);
+  };
+
+  // Function to check if otherUser is a deleted user
+  const isDeletedUser = (otherUser) => {
+    return !otherUser || otherUser.name === 'Deleted User' || otherUser.email === 'account-deleted';
   };
 
   return (
     <div className="flex flex-col h-full">
       {error && (
         <div className="mx-4 mt-2 p-2 bg-red-100 text-red-800 rounded-md text-sm">
-          {error}
+          <p>{error}</p>
+          <button 
+            onClick={fetchChatRooms}
+            className="mt-2 text-xs font-medium text-red-800 hover:underline"
+          >
+            Try Again
+          </button>
         </div>
       )}
 
@@ -197,18 +252,27 @@ const ChatList = ({ onChatSelect }) => {
                   selectedChatId === room._id
                     ? "bg-blue-50 border-l-4 border-l-blue-500"
                     : ""
-                }`}
+                } ${isDeletedUser(room.otherUser) ? "opacity-60" : ""}`}
                 onClick={() => handleChatSelect(room)}
               >
-                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-500 mr-3">
+                <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center text-blue-500 mr-3 ${
+                  isDeletedUser(room.otherUser) ? "bg-gray-200" : "bg-blue-100"
+                }`}>
                   <span className="font-semibold">
                     {room.otherUser?.name?.charAt(0)?.toUpperCase() || "?"}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-medium text-gray-900 truncate">
-                    {room.otherUser?.name || "Unknown User"}
-                  </h3>
+                  <div className="flex items-center">
+                    <h3 className="text-sm font-medium text-gray-900 truncate">
+                      {room.otherUser?.name || "Unknown User"}
+                    </h3>
+                    {isDeletedUser(room.otherUser) && (
+                      <span className="ml-2 px-1.5 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
+                        Deleted
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-500 truncate">
                     {room.otherUser?.email || "No email"}
                   </p>

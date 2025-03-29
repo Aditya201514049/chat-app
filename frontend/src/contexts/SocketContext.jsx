@@ -7,6 +7,18 @@ export const useSocket = () => {
   return useContext(SocketContext);
 };
 
+const checkUserCredentials = () => {
+  const token = localStorage.getItem("token");
+  const userId = localStorage.getItem("userId");
+  
+  if (!token || !userId) {
+    console.warn("No token or userId found, can't connect socket");
+    return false;
+  }
+  
+  return { token, userId };
+};
+
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -15,14 +27,17 @@ export const SocketProvider = ({ children }) => {
   // Setup socket connection
   useEffect(() => {
     // Get user data from localStorage
-    const token = localStorage.getItem("token");
-    const userId = localStorage.getItem("userId");
-
-    if (!token || !userId) {
-      console.log("No token or userId found, can't connect socket");
+    const credentials = checkUserCredentials();
+    
+    if (!credentials) {
+      // If no valid credentials, don't try to connect
+      setSocket(null);
+      setIsConnected(false);
       return;
     }
-
+    
+    const { token, userId } = credentials;
+    
     console.log(`Initializing socket connection to: ${API_URL} for user: ${userId}`);
 
     // Initialize socket connection
@@ -58,6 +73,11 @@ export const SocketProvider = ({ children }) => {
     newSocket.on("connect_error", (error) => {
       console.error("Socket connection error:", error);
       setIsConnected(false);
+      
+      // Check if it's an authentication error
+      if (error.message.includes('Authentication error') || error.message.includes('auth')) {
+        console.warn("Socket authentication failed. Token may be invalid.");
+      }
     });
 
     newSocket.on("error", (error) => {

@@ -1,6 +1,7 @@
 const Chat = require('../models/chatModel');
 const Message = require('../models/messageModel');
 const User = require('../models/userModel');
+const mongoose = require('mongoose');
 
 // Create a new chat (1-on-1)
 const createChat = async (req, res) => {
@@ -86,7 +87,11 @@ const sendMessage = async (req, res) => {
     }
 
     // Ensure the sender is part of the chat
-    if (![chat.sender._id.toString(), chat.recipient._id.toString()].includes(senderId.toString())) {
+    const senderIdStr = senderId.toString();
+    const chatSenderIdStr = chat.sender && chat.sender._id ? chat.sender._id.toString() : null;
+    const chatRecipientIdStr = chat.recipient && chat.recipient._id ? chat.recipient._id.toString() : null;
+    
+    if (senderIdStr !== chatSenderIdStr && senderIdStr !== chatRecipientIdStr) {
       return res.status(403).json({ message: 'Unauthorized to send messages in this chat' });
     }
 
@@ -106,9 +111,9 @@ const sendMessage = async (req, res) => {
     await chat.save();
 
     // Determine recipient - the other user in the chat
-    const recipientId = senderId.toString() === chat.sender._id.toString()
-      ? chat.recipient._id.toString()
-      : chat.sender._id.toString();
+    const recipientId = senderIdStr === chatSenderIdStr
+      ? chatRecipientIdStr
+      : chatSenderIdStr;
 
     // Prepare message data with sender info for socket
     const messageData = {
@@ -133,8 +138,13 @@ const sendMessage = async (req, res) => {
       };
       
       // Update the chat list for both users
-      io.to(senderId.toString()).emit('chat updated', chatData);
-      io.to(recipientId).emit('chat updated', chatData);
+      if (senderIdStr) {
+        io.to(senderIdStr).emit('chat updated', chatData);
+      }
+      
+      if (recipientId) {
+        io.to(recipientId).emit('chat updated', chatData);
+      }
     }
 
     // Respond with the new message
@@ -150,6 +160,10 @@ const getMessages = async (req, res) => {
   try {
     const { chatId } = req.params;
 
+    if (!mongoose.Types.ObjectId.isValid(chatId)) {
+      return res.status(400).json({ message: 'Invalid chat ID format' });
+    }
+
     const messages = await Message.find({ chatId });
     res.status(200).json(messages);
   } catch (error) {
@@ -160,23 +174,66 @@ const getMessages = async (req, res) => {
 
 const getChats = async (req, res) => {
   try {
+    // Get user ID from authenticated user
     const userId = req.user._id;
 
+    // Find all chats for this user using lean() for better performance
     const chats = await Chat.find({
-      $or: [{ sender: userId }, { recipient: userId }],
-    })
-      .populate('sender', 'name email')
-      .populate('recipient', 'name email');
+      $or: [{ sender: userId }, { recipient: userId }]
+    }).lean();
 
-    // Add the `otherUser` field for each chat
-    const formattedChats = chats.map((chat) => {
-      const isSender = chat.sender._id.toString() === userId.toString();
-      return {
-        ...chat.toObject(),
-        otherUser: isSender ? chat.recipient : chat.sender,
-      };
+    // Format and return chats with proper error handling
+    const formattedChats = [];
+
+    // Process each chat
+    for (const chat of chats) {
+      try {
+        // Determine if current user is sender or recipient
+        const isSender = chat.sender && chat.sender.toString() === userId.toString();
+        
+        // Get the other user's ID
+        const otherUserId = isSender ? chat.recipient : chat.sender;
+        
+        if (!otherUserId) {
+          console.log(`Chat ${chat._id} has missing user reference`);
+          continue; // Skip this chat as it's corrupted
+        }
+        
+        // Try to get other user info
+        let otherUser = null;
+        try {
+          otherUser = await User.findById(otherUserId).select('name email').lean();
+        } catch (error) {
+          console.log(`Error finding user ${otherUserId}: ${error.message}`);
+        }
+        
+        // If other user doesn't exist (was deleted)
+        if (!otherUser) {
+          otherUser = {
+            _id: otherUserId,
+            name: 'Deleted User',
+            email: 'account-deleted'
+          };
+        }
+        
+        // Add formatted chat to result
+        formattedChats.push({
+          ...chat,
+          otherUser
+        });
+      } catch (error) {
+        console.error(`Error processing chat ${chat._id}: ${error.message}`);
+        // Continue with next chat instead of failing the whole request
+      }
+    }
+    
+    // Sort chats by most recent first
+    formattedChats.sort((a, b) => {
+      const dateA = new Date(a.updatedAt || a.createdAt);
+      const dateB = new Date(b.updatedAt || b.createdAt);
+      return dateB - dateA;
     });
-
+    
     res.status(200).json(formattedChats);
   } catch (error) {
     console.error(`Error in getChats: ${error.message}`);
@@ -188,30 +245,59 @@ const getChatById = async (req, res) => {
   try {
     const { chatId } = req.params;
     const userId = req.user._id;
+    
+    // Validate chat ID format
+    if (!mongoose.Types.ObjectId.isValid(chatId)) {
+      return res.status(400).json({ message: 'Invalid chat ID format' });
+    }
 
-    const chat = await Chat.findById(chatId)
-      .populate('sender', 'name email')
-      .populate('recipient', 'name email');
-
+    // Find the chat directly
+    const chat = await Chat.findById(chatId).lean();
+    
+    // Check if chat exists
     if (!chat) {
       return res.status(404).json({ message: 'Chat not found' });
     }
 
-    // Check if the logged-in user is part of the chat
-    if (
-      chat.sender._id.toString() !== userId.toString() &&
-      chat.recipient._id.toString() !== userId.toString()
-    ) {
+    // Validate user belongs to this chat
+    const userIdStr = userId.toString();
+    const senderIdStr = chat.sender ? chat.sender.toString() : null;
+    const recipientIdStr = chat.recipient ? chat.recipient.toString() : null;
+
+    if (userIdStr !== senderIdStr && userIdStr !== recipientIdStr) {
       return res.status(403).json({ message: 'You are not authorized to view this chat' });
     }
 
-    // Determine the "other user" dynamically
-    const otherUser = chat.sender._id.toString() === userId.toString() ? chat.recipient : chat.sender;
+    // Determine if current user is sender or recipient
+    const isSender = userIdStr === senderIdStr;
+    const otherUserId = isSender ? chat.recipient : chat.sender;
 
-    res.status(200).json({
-      ...chat.toObject(),
-      otherUser,
+    // Create default response with placeholder for other user
+    let otherUser = {
+      _id: otherUserId || 'deleted-user',
+      name: 'Deleted User',
+      email: 'account-deleted'
+    };
+
+    // Try to get the actual other user if they exist
+    try {
+      if (otherUserId) {
+        const foundUser = await User.findById(otherUserId).select('name email').lean();
+        if (foundUser) {
+          otherUser = foundUser;
+        }
+      }
+    } catch (error) {
+      console.log(`Error finding other user: ${error.message}`);
+      // Just continue with the default user info
+    }
+
+    // Return the formatted chat
+    return res.status(200).json({
+      ...chat,
+      otherUser
     });
+    
   } catch (error) {
     console.error(`Error in getChatById: ${error.message}`);
     res.status(500).json({ message: 'Error retrieving chat' });
