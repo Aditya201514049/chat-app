@@ -23,42 +23,70 @@ const createChat = async (req, res) => {
         { sender: senderId, recipient: recipientId },
         { sender: recipientId, recipient: senderId },
       ],
-    });
+    }).populate('sender', 'name email')
+      .populate('recipient', 'name email');
 
     if (existingChat) {
+      // Set the chat's updatedAt to now to bring it to the top of the list
+      existingChat.updatedAt = new Date();
+      await existingChat.save();
+      
+      // Emit socket event if available
+      const io = req.app.get('io');
+      if (io) {
+        console.log(`Notifying users about existing chat: ${existingChat._id}`);
+        io.to(recipientId).emit('chat updated', existingChat);
+        io.to(senderId.toString()).emit('chat updated', existingChat);
+      }
+      
       return res.status(200).json(existingChat);
     }
 
     const newChat = new Chat({ 
       sender: senderId, 
-      recipient: recipientId 
+      recipient: recipientId,
+      updatedAt: new Date() 
     });
 
     await newChat.save();
-    res.status(201).json(newChat);
+    
+    // Populate the new chat
+    const populatedChat = await Chat.findById(newChat._id)
+      .populate('sender', 'name email')
+      .populate('recipient', 'name email');
+
+    // Emit socket event if available
+    const io = req.app.get('io');
+    if (io) {
+      console.log(`Notifying users about new chat: ${populatedChat._id}`);
+      io.to(recipientId).emit('new chat', populatedChat);
+      io.to(senderId.toString()).emit('new chat', populatedChat);
+    }
+    
+    res.status(201).json(populatedChat);
   } catch (error) {
     console.error(`Error in createChat: ${error.message}`);
     res.status(500).json({ message: 'Error creating chat' });
   }
 };
 
-
-
 // Send a new message to a chat
-
 const sendMessage = async (req, res) => {
   try {
     const { chatId, content } = req.body;
     const senderId = req.user._id;
 
     // Verify that the chat exists
-    const chat = await Chat.findById(chatId);
+    const chat = await Chat.findById(chatId)
+      .populate('sender', 'name email')
+      .populate('recipient', 'name email');
+      
     if (!chat) {
       return res.status(404).json({ message: 'Chat not found' });
     }
 
     // Ensure the sender is part of the chat
-    if (![chat.sender.toString(), chat.recipient.toString()].includes(senderId.toString())) {
+    if (![chat.sender._id.toString(), chat.recipient._id.toString()].includes(senderId.toString())) {
       return res.status(403).json({ message: 'Unauthorized to send messages in this chat' });
     }
 
@@ -68,7 +96,42 @@ const sendMessage = async (req, res) => {
 
     // Update the chat's messages array to include the new message
     chat.messages.push(newMessage._id);
+    // Update the timestamp for sorting chats by most recent activity
+    chat.updatedAt = new Date();
     await chat.save();
+
+    // Determine recipient - the other user in the chat
+    const recipientId = senderId.toString() === chat.sender._id.toString()
+      ? chat.recipient._id.toString()
+      : chat.sender._id.toString();
+
+    // Prepare message data with sender info for socket
+    const messageData = {
+      ...newMessage.toObject(),
+      chatId: chat._id  // Only send the chat ID, not the full chat object
+    };
+
+    // Emit socket event if available
+    const io = req.app.get('io');
+    if (io) {
+      console.log(`Server emitting message to chat room: ${chat._id}`);
+      
+      // Broadcast to the chat room
+      io.to(chat._id.toString()).emit('message received', messageData);
+      
+      // Send directly to both sender and recipient
+      io.to(senderId.toString()).emit('message received', messageData);
+      io.to(recipientId).emit('message received', messageData);
+      
+      // Notify about chat update
+      const chatData = {
+        ...chat.toObject(),
+        updatedAt: new Date()
+      };
+      
+      io.to(senderId.toString()).emit('chat updated', chatData);
+      io.to(recipientId).emit('chat updated', chatData);
+    }
 
     // Respond with the new message
     res.status(201).json(newMessage);
@@ -77,7 +140,6 @@ const sendMessage = async (req, res) => {
     res.status(500).json({ message: 'Error sending message' });
   }
 };
-
 
 // Get all messages in a chat
 const getMessages = async (req, res) => {
@@ -91,8 +153,6 @@ const getMessages = async (req, res) => {
     res.status(500).json({ message: 'Error retrieving messages' });
   }
 };
-
-
 
 const getChats = async (req, res) => {
   try {
@@ -119,9 +179,6 @@ const getChats = async (req, res) => {
     res.status(500).json({ message: 'Error retrieving chats' });
   }
 };
-
-
-
 
 const getChatById = async (req, res) => {
   try {
@@ -156,7 +213,6 @@ const getChatById = async (req, res) => {
     res.status(500).json({ message: 'Error retrieving chat' });
   }
 };
-
 
 module.exports = {
   createChat,

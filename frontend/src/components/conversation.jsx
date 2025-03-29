@@ -1,214 +1,339 @@
-import { useState, useEffect, useRef } from "react";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import React, { useState, useEffect, useRef } from "react";
+import { useSocket } from "../contexts/SocketContext";
 
 const Conversation = ({ chatId, onBack, chatName }) => {
   const [messages, setMessages] = useState([]);
   const [messageContent, setMessageContent] = useState("");
   const [error, setError] = useState("");
-  const [isSending, setIsSending] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  
   const messagesEndRef = useRef(null);
-  const messageContainerRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+  
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const userId = localStorage.getItem("userId");
+  
+  // Get socket context
+  const { socket, isConnected, joinChatRoom, sendMessage, startTyping, stopTyping } = useSocket();
 
-  useEffect(() => {
-    const fetchMessages = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch(`${API_URL}/api/chats/messages/${chatId}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
+  const fetchMessages = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch(`${API_URL}/api/chats/messages/${chatId}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
 
-        if (response.ok) {
-          const data = await response.json();
-          setMessages(data);
-          setError("");
-        } else {
-          setError("Failed to load messages. Please try again.");
-        }
-      } catch (err) {
-        console.error("Error fetching messages:", err);
-        setError("An error occurred while fetching messages.");
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error("Failed to fetch messages");
       }
-    };
 
+      const data = await response.json();
+      setMessages(data);
+    } catch (err) {
+      setError("Failed to load messages. Please try again.");
+      console.error("Error fetching messages:", err);
+      setError("An error occurred while fetching messages.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch messages when chat changes
+  useEffect(() => {
     if (chatId) fetchMessages();
   }, [chatId]);
+  
+  // Join the chat room when chat changes
+  useEffect(() => {
+    if (chatId && isConnected) {
+      joinChatRoom(chatId);
+    }
+  }, [chatId, isConnected, joinChatRoom]);
+  
+  // Listen for new messages
+  useEffect(() => {
+    if (!socket) return;
+    
+    const handleNewMessage = (newMessage) => {
+      console.log("New message received:", newMessage);
+      
+      // Check if the message is already in our list (to prevent duplicates)
+      setMessages((prevMessages) => {
+        const isExisting = prevMessages.some(msg => 
+          msg._id === newMessage._id
+        );
+        
+        if (!isExisting) {
+          return [...prevMessages, newMessage];
+        }
+        return prevMessages;
+      });
+      
+      // Clear typing indicator when a message is received
+      setIsTyping(false);
+    };
+    
+    // Listen for typing indicators
+    const handleTyping = () => {
+      setIsTyping(true);
+    };
+    
+    const handleStopTyping = () => {
+      setIsTyping(false);
+    };
+    
+    // Set up listeners
+    socket.on("message received", handleNewMessage);
+    socket.on("typing", handleTyping);
+    socket.on("stop typing", handleStopTyping);
+    
+    // Clean up listeners
+    return () => {
+      socket.off("message received", handleNewMessage);
+      socket.off("typing", handleTyping);
+      socket.off("stop typing", handleStopTyping);
+    };
+  }, [socket]);
 
+  // Scroll to bottom when messages change
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages]);
+  }, [messages, isTyping]);
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
     if (!messageContent.trim()) return;
 
-    setIsSending(true);
-    const token = localStorage.getItem("token");
-    const userId = localStorage.getItem("userId");
+    // Stop typing indicator
+    stopTyping(chatId);
+    
+    // Clear any existing typing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
 
-    if (!token) return alert("Please log in first");
+    // Create a temporary message to display immediately
+    const tempMessage = {
+      _id: `temp-${Date.now()}`,
+      sender: userId,
+      content: messageContent,
+      chatId: chatId,
+      createdAt: new Date().toISOString(),
+      tempMessage: true
+    };
+    
+    // Add the temporary message to the UI immediately
+    setMessages(prevMessages => [...prevMessages, tempMessage]);
+    
+    // Clear the input field right away for better UX
+    const messageToBeSent = messageContent;
+    setMessageContent("");
 
     try {
       const response = await fetch(`${API_URL}/api/chats/message`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({ chatId, content: messageContent }),
+        body: JSON.stringify({ chatId, content: messageToBeSent }),
       });
 
-      const newMessage = await response.json();
+      if (!response.ok) {
+        throw new Error("Failed to send message");
+      }
 
-      if (response.ok) {
-        setMessages((prevMessages) => [...prevMessages, {...newMessage, sender: userId}]);
-        setMessageContent("");
-        setError("");
-      } else {
-        setError("Error sending message.");
+      const newMessage = await response.json();
+      
+      // Replace the temp message with the real one from the server
+      setMessages(prevMessages => 
+        prevMessages.map(msg => 
+          msg._id === tempMessage._id ? 
+          { ...newMessage, sender: userId } : 
+          msg
+        )
+      );
+      
+      // Also emit the message via socket for more reliable delivery
+      if (socket && isConnected) {
+        // Send a simpler object with just the necessary information
+        sendMessage({
+          ...newMessage,
+          sender: userId,
+          chatId: chatId // Send just the ID, not a complex object
+        });
       }
     } catch (error) {
       console.error("Error sending message:", error);
-      setError("An error occurred while sending the message.");
-    }
-
-    setIsSending(false);
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey && !isSending) {
-      e.preventDefault();
-      handleSendMessage();
+      setError("Failed to send message. Please try again.");
+      
+      // Remove the temporary message on error
+      setMessages(prevMessages => 
+        prevMessages.filter(msg => msg._id !== tempMessage._id)
+      );
     }
   };
-
-  if (!chatId) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center p-6">
-          <p className="text-lg text-gray-500">
-            Select a conversation to start chatting
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const userId = localStorage.getItem("userId");
+  
+  // Handle typing indicator
+  const handleTyping = (e) => {
+    setMessageContent(e.target.value);
+    
+    // Don't send typing events for empty messages
+    if (!e.target.value.trim()) {
+      stopTyping(chatId);
+      return;
+    }
+    
+    // Send typing indicator
+    startTyping(chatId);
+    
+    // Clear previous timeout
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    
+    // Set timeout to stop typing indicator after 3 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      stopTyping(chatId);
+    }, 3000);
+  };
 
   return (
     <div className="flex flex-col h-full">
-      {/* Chat header */}
-      <div className="px-4 py-3 bg-white border-b border-gray-200 flex items-center">
-        {window.innerWidth < 768 && (
-          <button onClick={onBack} className="mr-3 text-gray-500 hover:text-gray-700">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-          </button>
-        )}
-        <div className="flex items-center">
-          <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center mr-3">
-            <span className="text-sm font-bold">{chatName?.charAt(0)?.toUpperCase()}</span>
-          </div>
-          <div>
-            <h2 className="text-sm font-medium text-gray-900">{chatName}</h2>
-          </div>
+      {!chatId ? (
+        <div className="flex-1 flex flex-col items-center justify-center p-6">
+          <img
+            src="https://img.icons8.com/fluent/96/000000/chat.png"
+            alt="Chat"
+            className="w-24 h-24 mb-4 opacity-50"
+          />
+          <h3 className="text-xl font-semibold text-gray-800">
+            Select a conversation to start chatting
+          </h3>
         </div>
-      </div>
-
-      {/* Messages section */}
-      <div 
-        ref={messageContainerRef}
-        className="flex-1 p-4 overflow-y-auto space-y-3 bg-gray-50"
-      >
-        {loading ? (
-          <div className="flex flex-col space-y-3">
-            <div className="animate-pulse flex">
-              <div className="bg-gray-200 h-10 w-32 rounded-lg"></div>
-            </div>
-            <div className="animate-pulse flex justify-end">
-              <div className="bg-gray-200 h-10 w-40 rounded-lg"></div>
-            </div>
-            <div className="animate-pulse flex">
-              <div className="bg-gray-200 h-10 w-36 rounded-lg"></div>
+      ) : (
+        <>
+          {/* Chat header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b shadow-sm bg-white">
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={onBack}
+                className="md:hidden p-1 rounded-full hover:bg-gray-200"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-500">
+                <span className="text-sm font-bold">{chatName?.charAt(0)?.toUpperCase()}</span>
+              </div>
+              <div>
+                <h2 className="text-sm font-medium text-gray-900">{chatName}</h2>
+              </div>
             </div>
           </div>
-        ) : (
-          <>
+
+          {/* Messages section */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
             {error && (
-              <div className="bg-red-100 text-red-700 p-2 rounded text-sm text-center">
+              <div className="bg-red-100 text-red-800 p-3 rounded-md text-sm mb-4">
                 {error}
               </div>
             )}
 
-            {messages.length > 0 ? (
-              messages.map((message, index) => (
-                <div
-                  key={message._id || index}
-                  className={`flex ${message.sender === userId ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`py-2 px-3 rounded-lg max-w-[75%] ${
-                      message.sender === userId
-                        ? "bg-blue-500 text-white"
-                        : "bg-white text-gray-800 border border-gray-200"
-                    }`}
-                  >
-                    <p className="text-sm">{message.content}</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500 text-sm">No messages yet</p>
-                <p className="text-gray-400 text-xs mt-1">Start the conversation!</p>
+            {loading ? (
+              <div className="flex justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
               </div>
-            )}
-            <div ref={messagesEndRef} />
-          </>
-        )}
-      </div>
-
-      {/* Message input */}
-      <div className="px-4 py-3 bg-white border-t border-gray-200">
-        <div className="flex items-center">
-          <input
-            type="text"
-            value={messageContent}
-            onChange={(e) => setMessageContent(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Type a message..."
-          />
-          <button
-            onClick={handleSendMessage}
-            disabled={isSending || !messageContent.trim()}
-            className={`ml-2 rounded-full w-10 h-10 flex items-center justify-center transition-colors ${
-              messageContent.trim() && !isSending
-                ? "bg-blue-500 text-white hover:bg-blue-600"
-                : "bg-gray-200 text-gray-400"
-            }`}
-          >
-            {isSending ? (
-              <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
             ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-              </svg>
+              <>
+                {messages.length > 0 ? (
+                  messages.map((message, index) => (
+                    <div
+                      key={message._id || index}
+                      className={`flex ${
+                        message.sender === userId ? "justify-end" : "justify-start"
+                      }`}
+                    >
+                      <div
+                        className={`max-w-xs md:max-w-md lg:max-w-lg px-4 py-2 rounded-lg ${
+                          message.sender === userId
+                            ? "bg-blue-600 text-white rounded-br-none"
+                            : "bg-gray-200 text-gray-800 rounded-bl-none"
+                        }`}
+                      >
+                        <p className="break-words">{message.content}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-6">
+                    <p className="text-gray-500 text-sm">No messages yet</p>
+                  </div>
+                )}
+                
+                {/* Typing indicator */}
+                {isTyping && (
+                  <div className="flex justify-start">
+                    <div className="bg-gray-200 text-gray-500 px-4 py-2 rounded-lg rounded-bl-none">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce"></div>
+                        <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+                        <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce" style={{ animationDelay: "0.4s" }}></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div ref={messagesEndRef} />
+              </>
             )}
-          </button>
-        </div>
-      </div>
+          </div>
+
+          {/* Message input */}
+          <div className="border-t px-4 py-3 bg-white">
+            <form onSubmit={handleSendMessage} className="flex space-x-2">
+              <input
+                type="text"
+                placeholder="Type a message..."
+                className="flex-1 py-2 px-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300"
+                value={messageContent}
+                onChange={handleTyping}
+              />
+              <button
+                type="submit"
+                disabled={!messageContent.trim()}
+                className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                  ></path>
+                </svg>
+              </button>
+            </form>
+          </div>
+        </>
+      )}
     </div>
   );
 };

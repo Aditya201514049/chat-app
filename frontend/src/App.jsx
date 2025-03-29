@@ -7,6 +7,8 @@ import Footer from "./components/Footer";
 import FriendsPage from "./pages/FriendsPage";
 import HomePage2 from "./pages/HomePage2";
 import ProfilePage from "./pages/ProfilePage";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import { SocketProvider } from "./contexts/SocketContext";
 
 // Wrapper component that uses location
 const AppContent = () => {
@@ -19,7 +21,7 @@ const AppContent = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-gray-50">
       <Navbar />
 
       {/* Main content with conditional padding */}
@@ -43,7 +45,11 @@ const AppContent = () => {
 function App() {
   return (
     <Router>
-      <AppContent />
+      <ThemeProvider>
+        <SocketProvider>
+          <AppContent />
+        </SocketProvider>
+      </ThemeProvider>
     </Router>
   );
 }
