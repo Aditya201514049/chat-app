@@ -1,17 +1,16 @@
-
 import React, { useEffect, useState, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [activeLink, setActiveLink] = useState("");
   const token = localStorage.getItem("token");
 
   const mobileDropdownRef = useRef(null);
@@ -65,13 +64,11 @@ const Navbar = () => {
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
-    setActiveLink("");
     setIsMobileMenuOpen(false);
   };
 
-  const handleLinkClick = (link) => {
-    setActiveLink(link);
-    setIsMobileMenuOpen(false);
+  const isActive = (path) => {
+    return location.pathname === path;
   };
 
   if (loading) {
@@ -87,19 +84,19 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 w-full bg-blue-600 text-white p-4 z-50">
       <div className="container mx-auto flex justify-between items-center px-4">
-        <h1 className="text-2xl font-bold">Chat App</h1>
+        <Link to="/" className="text-2xl font-bold">Chat App</Link>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-4">
           {!token ? (
             <>
               <Link to="/register">
-                <button className="btn btn-secondary btn-sm hover:btn-accent">
+                <button className="px-4 py-1.5 bg-blue-500 hover:bg-blue-700 text-white rounded-md transition-colors">
                   Register
                 </button>
               </Link>
               <Link to="/login">
-                <button className="btn btn-primary btn-sm hover:btn-accent">
+                <button className="px-4 py-1.5 bg-white text-blue-600 hover:bg-gray-100 rounded-md transition-colors">
                   Login
                 </button>
               </Link>
@@ -107,32 +104,45 @@ const Navbar = () => {
           ) : (
             <>
               <Link to="/home">
-                <button className="btn btn-primary btn-sm hover:btn-accent">
+                <button className={`px-4 py-1.5 rounded-md transition-colors ${isActive('/home') ? 'bg-blue-700 text-white' : 'hover:bg-blue-700 text-white'}`}>
                   Home
                 </button>
               </Link>
               <Link to="/friends">
-                <button className="btn btn-primary btn-sm hover:btn-accent">
+                <button className={`px-4 py-1.5 rounded-md transition-colors ${isActive('/friends') ? 'bg-blue-700 text-white' : 'hover:bg-blue-700 text-white'}`}>
                   Friends
                 </button>
               </Link>
               <div className="relative" ref={desktopDropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="text-sm font-medium hover:text-gray-300"
+                  className="flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-blue-700"
                 >
-                  {userName}
+                  <div className="w-8 h-8 rounded-full bg-blue-800 text-white flex items-center justify-center">
+                    <span className="text-sm font-bold">{userName.charAt(0).toUpperCase()}</span>
+                  </div>
+                  <span className="text-sm font-medium hidden sm:block">{userName}</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </button>
                 {isDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white text-black border rounded-lg shadow-lg">
-                    <div className="p-2">
+                    <div className="p-2 border-b">
                       <p className="font-bold">{userName}</p>
-                      <p className="text-sm">{userEmail}</p>
+                      <p className="text-sm text-gray-500">{userEmail}</p>
                     </div>
-                    <div className="border-t">
+                    <div>
+                      <Link 
+                        to="/profile"
+                        className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                        onClick={() => setIsDropdownOpen(false)}
+                      >
+                        View Profile
+                      </Link>
                       <button
                         onClick={handleLogout}
-                        className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-gray-200"
+                        className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-gray-100"
                       >
                         Logout
                       </button>
@@ -195,15 +205,15 @@ const Navbar = () => {
                   <>
                     <Link
                       to="/register"
-                      onClick={() => handleLinkClick("register")}
                       className="text-left px-4 py-2 hover:bg-gray-700 rounded-md text-white"
+                      onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Register
                     </Link>
                     <Link
                       to="/login"
-                      onClick={() => handleLinkClick("login")}
                       className="text-left px-4 py-2 hover:bg-gray-700 rounded-md text-white"
+                      onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Login
                     </Link>
@@ -212,17 +222,24 @@ const Navbar = () => {
                   <>
                     <Link
                       to="/home"
-                      onClick={() => handleLinkClick("home")}
                       className="text-left px-4 py-2 hover:bg-gray-700 rounded-md text-white"
+                      onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Home
                     </Link>
                     <Link
                       to="/friends"
-                      onClick={() => handleLinkClick("friends")}
                       className="text-left px-4 py-2 hover:bg-gray-700 rounded-md text-white"
+                      onClick={() => setIsMobileMenuOpen(false)}
                     >
                       Friends
+                    </Link>
+                    <Link
+                      to="/profile"
+                      className="text-left px-4 py-2 hover:bg-gray-700 rounded-md text-white"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Profile
                     </Link>
                     <div className="border-t border-gray-700 pt-2">
                       <div className="px-4 py-2">
