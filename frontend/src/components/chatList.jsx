@@ -36,6 +36,12 @@ const ChatList = ({ onChatSelect }) => {
     }
   };
 
+  // Helper function to get a unique ID for each chat
+  const getChatUniqueId = (chat) => {
+    if (!chat || !chat._id) return null;
+    return chat._id.toString();
+  };
+
   // Initial fetch of chat rooms
   useEffect(() => {
     fetchChatRooms();
@@ -49,40 +55,66 @@ const ChatList = ({ onChatSelect }) => {
     const handleNewChat = (chat) => {
       console.log("New chat received:", chat);
       setChatRooms((prevChats) => {
-        // Check if chat already exists to prevent duplicates
-        const exists = prevChats.some(existingChat => existingChat._id === chat._id);
-        if (exists) {
-          // If chat exists, don't add it again
-          return prevChats;
-        }
-        return [chat, ...prevChats];
+        // Always check by ID to prevent duplicates
+        const chatId = getChatUniqueId(chat);
+        if (!chatId) return prevChats;
+        
+        // Remove any existing duplicates first
+        const filteredChats = prevChats.filter(existingChat => 
+          getChatUniqueId(existingChat) !== chatId
+        );
+        
+        // Add the new chat at the beginning
+        return [
+          {...chat, updatedAt: new Date().toISOString()}, 
+          ...filteredChats
+        ];
       });
     };
     
     // Listen for chat updates (new messages, etc.)
     const handleChatUpdate = (updatedChat) => {
       console.log("Chat updated:", updatedChat);
+      
+      // First verify we have complete necessary data
+      if (!updatedChat || !updatedChat._id) {
+        console.error("Received invalid chat update:", updatedChat);
+        return;
+      }
+      
       setChatRooms((prevChats) => {
-        // Check if the chat exists in our list
-        const chatExists = prevChats.some(c => c._id === updatedChat._id);
+        const chatId = getChatUniqueId(updatedChat);
+        if (!chatId) return prevChats;
         
-        if (!chatExists) {
-          // If it's a new chat, add it to the list
-          return [updatedChat, ...prevChats];
-        }
+        // Remove any duplicates first
+        const filteredChats = prevChats.filter(chat => 
+          getChatUniqueId(chat) !== chatId
+        );
         
-        // Update the existing chat
-        return prevChats.map(chat => {
-          if (chat._id === updatedChat._id) {
-            return { 
-              ...chat, 
-              ...updatedChat, 
-              updatedAt: new Date() 
+        // Find if chat exists in our filtered list
+        const existingChat = prevChats.find(chat => getChatUniqueId(chat) === chatId);
+        
+        // Prepare the updated chat
+        const updatedChatObj = existingChat 
+          ? {
+              ...existingChat,
+              // Only copy properties that exist in the update
+              ...(updatedChat.sender && { sender: updatedChat.sender }),
+              ...(updatedChat.recipient && { recipient: updatedChat.recipient }),
+              ...(updatedChat.otherUser && { otherUser: updatedChat.otherUser }),
+              updatedAt: new Date().toISOString()
+            }
+          : {
+              ...updatedChat,
+              updatedAt: new Date().toISOString()
             };
-          }
-          return chat;
-        // Sort chats by most recent activity
-        }).sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+        
+        // Add at the beginning and sort by date
+        return [updatedChatObj, ...filteredChats].sort((a, b) => {
+          const dateA = new Date(a.updatedAt || a.createdAt);
+          const dateB = new Date(b.updatedAt || b.createdAt);
+          return dateB - dateA;
+        });
       });
     };
     
@@ -95,12 +127,20 @@ const ChatList = ({ onChatSelect }) => {
       // Find the chat this message belongs to and move it to the top
       setChatRooms(prevChats => {
         // Handle different types of chatId (string or object)
-        const chatId = typeof message.chatId === 'object' ? message.chatId._id : message.chatId;
+        const chatId = typeof message.chatId === 'object' 
+          ? message.chatId._id.toString() 
+          : message.chatId.toString();
         
-        // First check if we have this chat
-        const chatExists = prevChats.some(c => c._id === chatId);
-        if (!chatExists) {
-          // If the chat doesn't exist in our list, we'll need to fetch it
+        // Remove any duplicates first
+        const filteredChats = prevChats.filter(chat => 
+          getChatUniqueId(chat) !== chatId
+        );
+        
+        // Find the chat to update
+        const chatToUpdate = prevChats.find(chat => getChatUniqueId(chat) === chatId);
+        
+        if (!chatToUpdate) {
+          // If the chat doesn't exist in our list, we'll need to fetch all chats
           console.log("Chat not found in list, fetching chats");
           fetchChatRooms();
           return prevChats;
@@ -108,21 +148,11 @@ const ChatList = ({ onChatSelect }) => {
         
         console.log("Updating chat position:", chatId);
         
-        // Update the existing chat to move it to the top
-        return prevChats.map(chat => {
-          if (chat._id === chatId) {
-            return { 
-              ...chat, 
-              updatedAt: new Date().toISOString() // Ensure date is in string format
-            };
-          }
-          return chat;
-        }).sort((a, b) => {
-          // Parse dates for comparison
-          const dateA = new Date(a.updatedAt || a.createdAt);
-          const dateB = new Date(b.updatedAt || b.createdAt);
-          return dateB - dateA;
-        });
+        // Return with the updated chat at the top
+        return [
+          { ...chatToUpdate, updatedAt: new Date().toISOString() },
+          ...filteredChats
+        ];
       });
     };
     
@@ -146,10 +176,6 @@ const ChatList = ({ onChatSelect }) => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-gray-200">
-        <h2 className="font-semibold text-lg">Conversations</h2>
-      </div>
-
       {error && (
         <div className="mx-4 mt-2 p-2 bg-red-100 text-red-800 rounded-md text-sm">
           {error}
@@ -163,9 +189,10 @@ const ChatList = ({ onChatSelect }) => {
       ) : (
         <div className="flex-1 overflow-y-auto">
           {chatRooms.length > 0 ? (
-            chatRooms.map((room) => (
+            // Use a Set-based approach to remove any duplicate IDs
+            [...new Map(chatRooms.map(room => [getChatUniqueId(room), room])).values()].map((room) => (
               <div
-                key={room._id}
+                key={getChatUniqueId(room)}
                 className={`p-3 border-b border-gray-100 flex items-center cursor-pointer hover:bg-gray-50 transition-colors ${
                   selectedChatId === room._id
                     ? "bg-blue-50 border-l-4 border-l-blue-500"

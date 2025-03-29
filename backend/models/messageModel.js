@@ -1,22 +1,32 @@
 const mongoose = require('mongoose');
 
-const messageSchema = mongoose.Schema(
+const messageSchema = new mongoose.Schema(
   {
-    sender: { 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: 'User', // Reference to the 'User' model for sender
+    sender: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
     },
     content: {
       type: String,
-      required: true, // Message content
+      required: true,
+      trim: true,
     },
     chatId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Chat', // Reference to the 'Chat' model this message belongs to
+      ref: 'Chat',
       required: true,
     },
+    tempId: {
+      type: String,
+      required: false,
+    }
   },
-  { timestamps: true } // Automatically adds 'createdAt' and 'updatedAt' fields
+  {
+    timestamps: true,
+  }
 );
 
-module.exports = mongoose.model('Message', messageSchema);
+const Message = mongoose.model('Message', messageSchema);
+
+module.exports = Message;

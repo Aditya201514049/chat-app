@@ -73,7 +73,7 @@ const createChat = async (req, res) => {
 // Send a new message to a chat
 const sendMessage = async (req, res) => {
   try {
-    const { chatId, content } = req.body;
+    const { chatId, content, tempId } = req.body;
     const senderId = req.user._id;
 
     // Verify that the chat exists
@@ -91,7 +91,12 @@ const sendMessage = async (req, res) => {
     }
 
     // Create the new message
-    const newMessage = new Message({ sender: senderId, content, chatId });
+    const newMessage = new Message({ 
+      sender: senderId, 
+      content, 
+      chatId,
+      tempId  // Store the tempId for correlation
+    });
     await newMessage.save();
 
     // Update the chat's messages array to include the new message
@@ -108,27 +113,26 @@ const sendMessage = async (req, res) => {
     // Prepare message data with sender info for socket
     const messageData = {
       ...newMessage.toObject(),
-      chatId: chat._id  // Only send the chat ID, not the full chat object
+      chatId: chat._id,  // Only send the chat ID, not the full chat object
+      tempId // Include the tempId for correlation with temporary messages
     };
 
     // Emit socket event if available
     const io = req.app.get('io');
     if (io) {
-      console.log(`Server emitting message to chat room: ${chat._id}`);
+      console.log(`Server emitting message to chat room: ${chat._id}, tempId: ${tempId}`);
       
-      // Broadcast to the chat room
+      // Send to chat room ONLY (both users will be in this room)
+      // DO NOT emit directly to users separately, as that causes duplication
       io.to(chat._id.toString()).emit('message received', messageData);
       
-      // Send directly to both sender and recipient
-      io.to(senderId.toString()).emit('message received', messageData);
-      io.to(recipientId).emit('message received', messageData);
-      
-      // Notify about chat update
+      // Send chat updates as a separate event
       const chatData = {
         ...chat.toObject(),
         updatedAt: new Date()
       };
       
+      // Update the chat list for both users
       io.to(senderId.toString()).emit('chat updated', chatData);
       io.to(recipientId).emit('chat updated', chatData);
     }

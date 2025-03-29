@@ -17,8 +17,10 @@ const Conversation = ({ chatId, onBack, chatName }) => {
   // Get socket context
   const { socket, isConnected, joinChatRoom, sendMessage, startTyping, stopTyping } = useSocket();
 
+  // Add a ref to track the current chat
+  const currentChatIdRef = useRef(null);
+
   const fetchMessages = async () => {
-    setLoading(true);
     setError("");
     try {
       const response = await fetch(`${API_URL}/api/chats/messages/${chatId}`, {
@@ -33,20 +35,64 @@ const Conversation = ({ chatId, onBack, chatName }) => {
       }
 
       const data = await response.json();
-      setMessages(data);
+      
+      // Update messages but don't replace any pending messages
+      setMessages(prevMessages => {
+        // Filter out pending messages for this chat
+        const pendingMessages = prevMessages.filter(
+          msg => msg.chatId === chatId && msg.pending
+        );
+        
+        // If we have pending messages, keep them and add new ones
+        if (pendingMessages.length > 0) {
+          // Get messages from the server that aren't duplicates of our pending ones
+          const newMessages = data.filter(serverMsg => 
+            !pendingMessages.some(pendingMsg => 
+              pendingMsg.content === serverMsg.content && 
+              pendingMsg.sender === serverMsg.sender
+            )
+          );
+          
+          // Combine both, with pending messages at the end
+          return [...newMessages, ...pendingMessages];
+        }
+        
+        // Otherwise just use the data from the server
+        return data;
+      });
+      
     } catch (err) {
-      setError("Failed to load messages. Please try again.");
       console.error("Error fetching messages:", err);
-      setError("An error occurred while fetching messages.");
-    } finally {
-      setLoading(false);
+      setError("Failed to load messages. Please try again.");
+      // Re-throw so the promise rejection is passed to the caller
+      throw err;
     }
   };
 
   // Fetch messages when chat changes
   useEffect(() => {
-    if (chatId) fetchMessages();
-  }, [chatId]);
+    if (!chatId) return;
+    
+    // Only fetch if this is a different chat than we already have
+    if (currentChatIdRef.current !== chatId) {
+      currentChatIdRef.current = chatId;
+      
+      // Used a ref to track initial loading to avoid infinite loops
+      const shouldShowLoading = messages.filter(m => m.chatId === chatId).length === 0;
+      
+      if (shouldShowLoading) {
+        setLoading(true);
+      }
+      
+      fetchMessages()
+        .then(() => {
+          setLoading(false);
+        })
+        .catch(() => {
+          setLoading(false);
+        });
+    }
+  }, [chatId]); // Removed messages from dependency array to avoid loops
   
   // Join the chat room when chat changes
   useEffect(() => {
@@ -60,21 +106,69 @@ const Conversation = ({ chatId, onBack, chatName }) => {
     if (!socket) return;
     
     const handleNewMessage = (newMessage) => {
-      console.log("New message received:", newMessage);
+      console.log("New message received via socket:", newMessage);
       
-      // Check if the message is already in our list (to prevent duplicates)
       setMessages((prevMessages) => {
-        const isExisting = prevMessages.some(msg => 
-          msg._id === newMessage._id
-        );
+        // Track if we need to add this message
+        let shouldAddMessage = true;
         
-        if (!isExisting) {
-          return [...prevMessages, newMessage];
+        // Create a new messages array to avoid modifying the previous one directly
+        let updatedMessages = [...prevMessages];
+        
+        // CASE 1: Message with same ID already exists
+        if (newMessage._id) {
+          const messageWithSameId = prevMessages.find(m => m._id === newMessage._id);
+          if (messageWithSameId) {
+            console.log(`Message with ID ${newMessage._id} already exists, ignoring`);
+            return prevMessages; // No changes needed
+          }
         }
-        return prevMessages;
+        
+        // CASE 2: This is a real message replacing a temp message
+        if (newMessage.tempId) {
+          // Loop through to find and replace temp message
+          let tempFound = false;
+          updatedMessages = prevMessages.map(msg => {
+            if (msg._id === newMessage.tempId || 
+                (msg.tempMessage && msg.content === newMessage.content && msg.sender === newMessage.sender)) {
+              console.log(`Replacing temp message with real message ${newMessage._id}`);
+              tempFound = true;
+              return { 
+                ...newMessage, 
+                sender: msg.sender, 
+                pending: false 
+              };
+            }
+            return msg;
+          });
+          
+          // If we found and replaced a temp message, return the updated array
+          if (tempFound) {
+            return updatedMessages;
+          }
+        }
+        
+        // CASE 3: Check for duplicate content with same timestamp (within 3 seconds)
+        const isDuplicate = prevMessages.some(msg => {
+          if (msg.content === newMessage.content && msg.sender === newMessage.sender) {
+            const msgTime = new Date(msg.createdAt || msg.timestamp || Date.now()).getTime();
+            const newMsgTime = new Date(newMessage.createdAt || newMessage.timestamp || Date.now()).getTime();
+            return Math.abs(msgTime - newMsgTime) < 3000;
+          }
+          return false;
+        });
+        
+        if (isDuplicate) {
+          console.log("Duplicate message detected, ignoring");
+          return prevMessages;
+        }
+        
+        // CASE 4: This is a completely new message, add it
+        console.log("Adding new message:", newMessage.content);
+        return [...prevMessages, { ...newMessage, pending: false }];
       });
       
-      // Clear typing indicator when a message is received
+      // Clear typing indicator
       setIsTyping(false);
     };
     
@@ -120,31 +214,44 @@ const Conversation = ({ chatId, onBack, chatName }) => {
       typingTimeoutRef.current = null;
     }
 
+    // Generate a unique temp ID that we'll use for tracking
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Save the content we're about to send
+    const messageToBeSent = messageContent.trim();
+    
     // Create a temporary message to display immediately
     const tempMessage = {
-      _id: `temp-${Date.now()}`,
+      _id: tempId,
       sender: userId,
-      content: messageContent,
+      content: messageToBeSent,
       chatId: chatId,
       createdAt: new Date().toISOString(),
-      tempMessage: true
+      tempMessage: true,
+      pending: true
     };
     
     // Add the temporary message to the UI immediately
     setMessages(prevMessages => [...prevMessages, tempMessage]);
     
     // Clear the input field right away for better UX
-    const messageToBeSent = messageContent;
     setMessageContent("");
 
     try {
+      // Send message via HTTP
+      console.log("Sending message via HTTP endpoint");
+      
       const response = await fetch(`${API_URL}/api/chats/message`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({ chatId, content: messageToBeSent }),
+        body: JSON.stringify({ 
+          chatId, 
+          content: messageToBeSent,
+          tempId // Include tempId for correlation
+        }),
       });
 
       if (!response.ok) {
@@ -152,32 +259,37 @@ const Conversation = ({ chatId, onBack, chatName }) => {
       }
 
       const newMessage = await response.json();
+      console.log("Message sent successfully, server returned:", newMessage._id);
       
-      // Replace the temp message with the real one from the server
-      setMessages(prevMessages => 
-        prevMessages.map(msg => 
-          msg._id === tempMessage._id ? 
-          { ...newMessage, sender: userId } : 
-          msg
-        )
-      );
-      
-      // Also emit the message via socket for more reliable delivery
-      if (socket && isConnected) {
-        // Send a simpler object with just the necessary information
-        sendMessage({
-          ...newMessage,
-          sender: userId,
-          chatId: chatId // Send just the ID, not a complex object
-        });
-      }
+      // Check if socket already handled replacing the temp message
+      setMessages(prevMessages => {
+        // If the temp message is still there (socket hasn't replaced it),
+        // replace it with the real message now
+        const tempMessageExists = prevMessages.some(m => m._id === tempId);
+        const newMessageExists = prevMessages.some(m => m._id === newMessage._id);
+        
+        if (tempMessageExists && !newMessageExists) {
+          console.log("HTTP response: Replacing temp message with real message");
+          return prevMessages.map(msg => 
+            msg._id === tempId ? 
+            { ...newMessage, sender: userId, pending: false } : 
+            msg
+          );
+        }
+        
+        return prevMessages;
+      });
     } catch (error) {
       console.error("Error sending message:", error);
       setError("Failed to send message. Please try again.");
       
-      // Remove the temporary message on error
+      // Mark the temporary message as failed
       setMessages(prevMessages => 
-        prevMessages.filter(msg => msg._id !== tempMessage._id)
+        prevMessages.map(msg => 
+          msg._id === tempId ? 
+          { ...msg, failed: true, pending: false } : 
+          msg
+        )
       );
     }
   };
@@ -251,7 +363,7 @@ const Conversation = ({ chatId, onBack, chatName }) => {
               </div>
             )}
 
-            {loading ? (
+            {loading && messages.length === 0 ? (
               <div className="flex justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
               </div>
@@ -263,16 +375,35 @@ const Conversation = ({ chatId, onBack, chatName }) => {
                       key={message._id || index}
                       className={`flex ${
                         message.sender === userId ? "justify-end" : "justify-start"
-                      }`}
+                      } mb-2`}
                     >
                       <div
                         className={`max-w-xs md:max-w-md lg:max-w-lg px-4 py-2 rounded-lg ${
                           message.sender === userId
-                            ? "bg-blue-600 text-white rounded-br-none"
+                            ? `bg-blue-${message.failed ? "100" : "600"} ${message.failed ? "text-red-500" : "text-white"} rounded-br-none`
                             : "bg-gray-200 text-gray-800 rounded-bl-none"
-                        }`}
+                        } ${message.pending ? "opacity-70" : ""}`}
                       >
                         <p className="break-words">{message.content}</p>
+                        {message.pending && (
+                          <div className="flex justify-end mt-1">
+                            <div className="w-3 h-3 rounded-full border-2 border-t-transparent border-white animate-spin"></div>
+                          </div>
+                        )}
+                        {message.failed && (
+                          <div className="flex justify-end mt-1">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Create a retry function here
+                                // You can copy the send logic and apply it to this specific message
+                              }}
+                              className="text-xs text-red-500 hover:underline"
+                            >
+                              Failed - Retry
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))
@@ -292,6 +423,13 @@ const Conversation = ({ chatId, onBack, chatName }) => {
                         <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce" style={{ animationDelay: "0.4s" }}></div>
                       </div>
                     </div>
+                  </div>
+                )}
+                
+                {/* Loading more indicator at the top when fetching older messages */}
+                {loading && messages.length > 0 && (
+                  <div className="flex justify-center py-2">
+                    <div className="w-5 h-5 border-t-2 border-blue-500 rounded-full animate-spin"></div>
                   </div>
                 )}
                 

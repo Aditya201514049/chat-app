@@ -2,11 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import ChatList from "../components/chatList";
 import Conversation from "../components/conversation";
+import { useSocket } from "../contexts/SocketContext";
 
 const HomePage2 = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const location = useLocation();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768); // Check if it's mobile
+  const { isConnected, joinChatRoom } = useSocket();
 
   // Update `isMobile` on window resize
   useEffect(() => {
@@ -18,11 +20,30 @@ const HomePage2 = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Handle state from navigation
   useEffect(() => {
     if (location.state && location.state.selectedChat) {
       setSelectedChat(location.state.selectedChat);
     }
   }, [location]);
+
+  // When connection status changes, rejoin chat room if needed
+  useEffect(() => {
+    if (isConnected && selectedChat?._id) {
+      console.log("Connection changed, rejoining chat room:", selectedChat._id);
+      joinChatRoom(selectedChat._id);
+    }
+  }, [isConnected, selectedChat, joinChatRoom]);
+
+  // Handle chat selection
+  const handleChatSelect = (chat) => {
+    setSelectedChat(chat);
+    
+    // Make sure we join the chat room
+    if (isConnected && chat?._id) {
+      joinChatRoom(chat._id);
+    }
+  };
 
   return (
     <div className="fixed inset-0 pt-16 bg-gray-50">
@@ -33,7 +54,7 @@ const HomePage2 = () => {
             <h1 className="text-xl font-semibold text-gray-800">Conversations</h1>
           </div>
           <div className="flex-1 overflow-y-auto">
-            <ChatList onChatSelect={(chat) => setSelectedChat(chat)} />
+            <ChatList onChatSelect={handleChatSelect} />
           </div>
         </div>
 
