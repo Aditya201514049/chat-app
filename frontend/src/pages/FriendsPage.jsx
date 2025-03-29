@@ -9,6 +9,9 @@ const FriendsPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [existingChats, setExistingChats] = useState({});
+  const [showChatCreated, setShowChatCreated] = useState(false);
+  const [createdChatInfo, setCreatedChatInfo] = useState(null);
   const navigate = useNavigate();
   const { theme } = useTheme();
   const { joinChatRoom, isConnected } = useSocket();
@@ -39,9 +42,75 @@ const FriendsPage = () => {
     fetchUsers();
   }, []);
 
-  const handleCreateChat = async (recipientId) => {
+  // Fetch existing chats to know which users already have chats
+  useEffect(() => {
+    const fetchExistingChats = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`${API_URL}/api/chats/getchats`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const chats = await response.json();
+          
+          // Create a map of user IDs to chat IDs
+          const chatMap = {};
+          chats.forEach(chat => {
+            // For each participant that isn't the current user
+            chat.participants.forEach(participant => {
+              if (participant._id !== localStorage.getItem("userId")) {
+                chatMap[participant._id] = chat._id;
+              }
+            });
+          });
+          
+          setExistingChats(chatMap);
+        }
+      } catch (error) {
+        console.error("Error fetching existing chats:", error);
+      }
+    };
+
+    fetchExistingChats();
+  }, []);
+
+  const handleCreateChat = async (recipientId, recipientName) => {
     try {
       const token = localStorage.getItem("token");
+      
+      // If chat already exists, navigate to it
+      if (existingChats[recipientId]) {
+        // Pre-join the chat room before navigation if connected
+        if (isConnected) {
+          console.log(`Joining existing chat room ${existingChats[recipientId]}`);
+          joinChatRoom(existingChats[recipientId]);
+          
+          // Small delay to ensure the room is joined before navigation
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+        
+        // Show a notification that we're navigating to an existing chat
+        setCreatedChatInfo({
+          name: recipientName,
+          isNew: false
+        });
+        setShowChatCreated(true);
+        
+        // Navigate after a short delay to allow the user to see the notification
+        setTimeout(() => {
+          navigate("/home", { 
+            state: { 
+              selectedChatId: existingChats[recipientId],
+              fromFriendsPage: true 
+            } 
+          });
+        }, 1500);
+        
+        return;
+      }
       
       // Show loading indicator for this specific user
       setUsers(prevUsers => 
@@ -67,6 +136,21 @@ const FriendsPage = () => {
       
       const chat = await response.json();
 
+      // Update our existing chats map
+      setExistingChats(prev => ({
+        ...prev,
+        [recipientId]: chat._id
+      }));
+
+      // Remove loading state
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          user._id === recipientId 
+            ? { ...user, isLoading: false } 
+            : user
+        )
+      );
+
       // Pre-join the chat room before navigation if connected
       if (isConnected && chat._id) {
         console.log(`Pre-joining chat room ${chat._id} before navigation`);
@@ -76,12 +160,22 @@ const FriendsPage = () => {
         await new Promise(resolve => setTimeout(resolve, 300));
       }
 
-      navigate("/home", { 
-        state: { 
-          selectedChat: chat,
-          fromFriendsPage: true 
-        } 
+      // Show a notification that the chat was created
+      setCreatedChatInfo({
+        name: recipientName,
+        isNew: true
       });
+      setShowChatCreated(true);
+      
+      // Navigate after a short delay to allow the user to see the notification
+      setTimeout(() => {
+        navigate("/home", { 
+          state: { 
+            selectedChatId: chat._id,
+            fromFriendsPage: true 
+          } 
+        });
+      }, 1500);
     } catch (error) {
       console.error("Error:", error);
       
@@ -128,6 +222,33 @@ const FriendsPage = () => {
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
+
+      {/* Toast notification for chat created/navigating to existing chat */}
+      {showChatCreated && createdChatInfo && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <div className="bg-green-100 dark:bg-green-800 border-l-4 border-green-500 text-green-700 dark:text-green-100 p-4 rounded shadow-lg" role="alert">
+            <div className="flex">
+              <div className="py-1">
+                <svg className="h-6 w-6 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-bold">
+                  {createdChatInfo.isNew 
+                    ? "Chat Created!" 
+                    : "Opening Existing Chat"}
+                </p>
+                <p className="text-sm">
+                  {createdChatInfo.isNew 
+                    ? `New chat with ${createdChatInfo.name} created. Redirecting...` 
+                    : `You already have a chat with ${createdChatInfo.name}. Opening...`}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -187,11 +308,15 @@ const FriendsPage = () => {
                     </div>
                   </div>
                   <button
-                    onClick={() => handleCreateChat(user._id)}
+                    onClick={() => handleCreateChat(user._id, user.name)}
                     disabled={user.isLoading}
-                    className="mt-4 w-full py-2 px-4 border-0 rounded-md shadow-sm text-sm font-medium transition-colors"
+                    className={`mt-4 w-full py-2 px-4 border-0 rounded-md shadow-sm text-sm font-medium transition-colors ${
+                      existingChats[user._id] ? "bg-opacity-80" : ""
+                    }`}
                     style={{ 
-                      backgroundColor: 'var(--color-button-primary)',
+                      backgroundColor: existingChats[user._id] 
+                        ? 'var(--color-button-secondary)' 
+                        : 'var(--color-button-primary)',
                       color: 'var(--color-text-message-mine)',
                       opacity: user.isLoading ? 0.7 : 1
                     }}
@@ -201,7 +326,21 @@ const FriendsPage = () => {
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                         Connecting...
                       </div>
-                    ) : "Message"}
+                    ) : existingChats[user._id] ? (
+                      <div className="flex items-center justify-center">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        Open Chat
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Create Chat
+                      </div>
+                    )}
                   </button>
                 </div>
               ))}

@@ -4,14 +4,18 @@ import ChatList from "../components/chatList";
 import Conversation from "../components/conversation";
 import { useSocket } from "../contexts/SocketContext";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 const HomePage2 = () => {
   const [selectedChat, setSelectedChat] = useState(null);
+  const [selectedChatId, setSelectedChatId] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768); // Check if it's mobile
   const { isConnected, joinChatRoom } = useSocket();
   const [hasJoinedInitialRoom, setHasJoinedInitialRoom] = useState(false);
   const [authError, setAuthError] = useState(false);
+  const [isLoadingChat, setIsLoadingChat] = useState(false);
 
   // Verify user is authenticated
   useEffect(() => {
@@ -57,37 +61,110 @@ const HomePage2 = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Handle state from navigation
+  // Fetch a specific chat by ID
+  const fetchChatById = async (chatId) => {
+    try {
+      setIsLoadingChat(true);
+      const token = localStorage.getItem("token");
+      
+      if (!token) {
+        console.warn("No token found for fetching chat");
+        setAuthError(true);
+        return null;
+      }
+      
+      const response = await fetch(`${API_URL}/api/chats/${chatId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (response.status === 401) {
+        console.warn("Auth error while fetching chat");
+        setAuthError(true);
+        return null;
+      }
+      
+      if (!response.ok) {
+        console.error("Error fetching chat:", response.status);
+        return null;
+      }
+      
+      const chatData = await response.json();
+      return chatData;
+    } catch (error) {
+      console.error("Error fetching chat:", error);
+      return null;
+    } finally {
+      setIsLoadingChat(false);
+    }
+  };
+
+  // Handle state from navigation (with support for selectedChatId)
   useEffect(() => {
-    if (!authError && location.state && location.state.selectedChat) {
-      setSelectedChat(location.state.selectedChat);
-      // Make sure we join the chat room when navigating from another page
-      if (isConnected && location.state.selectedChat?._id) {
-        console.log(`Joining chat room from navigation: ${location.state.selectedChat._id}`);
-        joinChatRoom(location.state.selectedChat._id);
+    if (authError) return;
+    
+    if (location.state) {
+      // Handle case where we get a selectedChatId (from FriendsPage)
+      if (location.state.selectedChatId && !selectedChat) {
+        const chatId = location.state.selectedChatId;
+        setSelectedChatId(chatId);
         
-        // Mark that we've joined a room initially if from friends page
-        if (location.state.fromFriendsPage) {
-          setHasJoinedInitialRoom(true);
+        console.log(`Got selectedChatId from navigation: ${chatId}`);
+        
+        // Need to fetch the full chat data
+        fetchChatById(chatId).then(chatData => {
+          if (chatData) {
+            console.log("Fetched chat data:", chatData);
+            setSelectedChat(chatData);
+            
+            // Make sure we join the chat room
+            if (isConnected) {
+              console.log(`Joining chat room from selectedChatId: ${chatId}`);
+              joinChatRoom(chatId);
+              
+              // Mark that we've joined a room initially if from friends page
+              if (location.state.fromFriendsPage) {
+                setHasJoinedInitialRoom(true);
+              }
+            }
+          }
+        });
+      }
+      // Handle case where we get a full selectedChat object
+      else if (location.state.selectedChat) {
+        setSelectedChat(location.state.selectedChat);
+        setSelectedChatId(location.state.selectedChat._id);
+        
+        // Make sure we join the chat room
+        if (isConnected && location.state.selectedChat?._id) {
+          console.log(`Joining chat room from navigation: ${location.state.selectedChat._id}`);
+          joinChatRoom(location.state.selectedChat._id);
+          
+          // Mark that we've joined a room initially if from friends page
+          if (location.state.fromFriendsPage) {
+            setHasJoinedInitialRoom(true);
+          }
         }
       }
     }
-  }, [location, isConnected, joinChatRoom, authError]);
+  }, [location, isConnected, joinChatRoom, authError, selectedChat]);
 
   // When connection status changes, rejoin chat room if needed
   useEffect(() => {
-    if (!authError && isConnected && selectedChat?._id) {
-      console.log("Connection changed, rejoining chat room:", selectedChat._id);
-      joinChatRoom(selectedChat._id);
+    if (!authError && isConnected && selectedChatId) {
+      console.log("Connection changed, rejoining chat room:", selectedChatId);
+      joinChatRoom(selectedChatId);
       setHasJoinedInitialRoom(true);
     }
-  }, [isConnected, selectedChat, joinChatRoom, authError]);
+  }, [isConnected, selectedChatId, joinChatRoom, authError]);
 
   // Handle chat selection
   const handleChatSelect = (chat) => {
     if (authError) return;
     
     setSelectedChat(chat);
+    setSelectedChatId(chat._id);
     
     // Make sure we join the chat room
     if (isConnected && chat?._id) {
@@ -125,7 +202,7 @@ const HomePage2 = () => {
           <div className="flex-1 overflow-y-auto">
             <ChatList 
               onChatSelect={handleChatSelect} 
-              selectedChatId={selectedChat?._id} 
+              selectedChatId={selectedChatId} 
               onAuthError={() => {
                 // Dispatch auth error event
                 window.dispatchEvent(new CustomEvent('authError', {
@@ -138,10 +215,23 @@ const HomePage2 = () => {
 
         {/* Conversation panel */}
         <div className={`${isMobile && !selectedChat ? 'hidden' : 'flex'} flex-col flex-1 bg-gray-50`}>
-          {selectedChat ? (
+          {isLoadingChat ? (
+            <div className="flex items-center justify-center h-full bg-gray-50">
+              <div className="text-center p-6">
+                <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+                <h3 className="text-xl font-medium text-gray-800">Loading conversation</h3>
+                <p className="text-gray-500 mt-2">Please wait while we fetch your chat</p>
+              </div>
+            </div>
+          ) : selectedChat ? (
             <Conversation 
-              chatId={selectedChat._id} 
-              onBack={() => setSelectedChat(null)} 
+              chatId={selectedChatId} 
+              onBack={() => {
+                setSelectedChat(null);
+                setSelectedChatId(null);
+              }} 
               chatName={selectedChat?.otherUser?.name || 'Chat'}
               hasJoinedRoom={hasJoinedInitialRoom}
               onAuthError={() => {

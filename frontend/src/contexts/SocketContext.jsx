@@ -1,7 +1,15 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { io } from "socket.io-client";
 
-const SocketContext = createContext();
+// Create context with a default value (null for socket, false for isConnected)
+export const SocketContext = createContext({
+  socket: null, 
+  isConnected: false,
+  joinChatRoom: () => {},
+  sendMessage: () => false,
+  startTyping: () => {},
+  stopTyping: () => {}
+});
 
 export const useSocket = () => {
   return useContext(SocketContext);
@@ -170,6 +178,4 @@ export const SocketProvider = ({ children }) => {
       {children}
     </SocketContext.Provider>
   );
-};
-
-export default SocketContext; 
+}; 
