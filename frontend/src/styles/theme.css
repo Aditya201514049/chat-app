@@ -1,0 +1,109 @@
+/* Base theme variables */
+:root {
+  /* Animation durations */
+  --transition-speed: 0.3s;
+}
+
+/* Light theme (default) */
+.light-theme {
+  /* Background colors */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f9fafb;
+  --color-bg-elevated: #ffffff;
+  --color-bg-navbar: #3b82f6; /* blue-500 */
+  --color-bg-input: #f3f4f6;
+  --color-bg-dropdown: #ffffff;
+  --color-bg-highlight: #ebf5ff;
+  --color-bg-gradient-start: #3b82f6;
+  --color-bg-gradient-end: #2563eb;
+  --color-bg-avatar: #3b82f6;
+  --color-bg-sidebar: #ffffff;
+  --color-bg-card: #ffffff;
+  --color-bg-message-mine: #3b82f6;
+  --color-bg-message-others: #ffffff;
+  --color-bg-footer: #f3f4f6;
+  
+  /* Text colors */
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-tertiary: #6b7280;
+  --color-text-navbar: #ffffff;
+  --color-text-message-mine: #ffffff;
+  --color-text-message-others: #111827;
+  --color-text-input: #111827;
+  --color-text-placeholder: #9ca3af;
+  --color-text-error: #ef4444;
+  --color-text-success: #10b981;
+  
+  /* Border colors */
+  --color-border-light: #e5e7eb;
+  --color-border-input: #d1d5db;
+  --color-border-message: #e5e7eb;
+  --color-border-dropdown: #d1d5db;
+  
+  /* Button colors */
+  --color-button-primary: #3b82f6;
+  --color-button-primary-hover: #2563eb;
+  --color-button-secondary: #e5e7eb;
+  --color-button-secondary-hover: #d1d5db;
+  --color-button-danger: #ef4444;
+  --color-button-danger-hover: #dc2626;
+  
+  /* Shadow */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Dark theme */
+.dark-theme {
+  /* Background colors */
+  --color-bg-primary: #121212;
+  --color-bg-secondary: #1f2937;
+  --color-bg-elevated: #1e1e1e;
+  --color-bg-navbar: #1e3a8a; /* blue-900 */
+  --color-bg-input: #374151;
+  --color-bg-dropdown: #1f2937;
+  --color-bg-highlight: #172554;
+  --color-bg-gradient-start: #1e3a8a;
+  --color-bg-gradient-end: #1e40af;
+  --color-bg-avatar: #1d4ed8;
+  --color-bg-sidebar: #111827;
+  --color-bg-card: #1f2937;
+  --color-bg-message-mine: #1d4ed8;
+  --color-bg-message-others: #374151;
+  --color-bg-footer: #111827;
+  
+  /* Text colors */
+  --color-text-primary: #f9fafb;
+  --color-text-secondary: #e5e7eb;
+  --color-text-tertiary: #9ca3af;
+  --color-text-navbar: #ffffff;
+  --color-text-message-mine: #ffffff;
+  --color-text-message-others: #f3f4f6;
+  --color-text-input: #f9fafb;
+  --color-text-placeholder: #6b7280;
+  --color-text-error: #f87171;
+  --color-text-success: #34d399;
+  
+  /* Border colors */
+  --color-border-light: #374151;
+  --color-border-input: #4b5563;
+  --color-border-message: #4b5563;
+  --color-border-dropdown: #4b5563;
+  
+  /* Button colors */
+  --color-button-primary: #2563eb;
+  --color-button-primary-hover: #1d4ed8;
+  --color-button-secondary: #4b5563;
+  --color-button-secondary-hover: #374151;
+  --color-button-danger: #dc2626;
+  --color-button-danger-hover: #b91c1c;
+  
+  /* Shadow - darker for dark mode */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.15);
+} 

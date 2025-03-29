@@ -1,11 +1,14 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import ThemeToggle from "./ThemeToggle";
+import { useTheme } from "../contexts/ThemeContext";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { theme } = useTheme();
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [loading, setLoading] = useState(true);
@@ -73,8 +76,8 @@ const Navbar = () => {
 
   if (loading) {
     return (
-      <nav className="fixed top-0 left-0 w-full bg-blue-600 text-white py-3 shadow-md z-50">
-        <div className="container mx-auto flex justify-between items-center px-4">
+      <nav className="fixed top-0 left-0 w-full z-50" style={{ backgroundColor: 'var(--color-bg-navbar)', color: 'var(--color-text-navbar)' }}>
+        <div className="container mx-auto flex justify-between items-center px-4 py-3">
           <h1 className="text-2xl font-bold">Loading...</h1>
         </div>
       </nav>
@@ -82,8 +85,8 @@ const Navbar = () => {
   }
 
   return (
-    <nav className="fixed top-0 left-0 w-full bg-blue-600 text-white p-4 z-50">
-      <div className="container mx-auto flex justify-between items-center px-4">
+    <nav className="fixed top-0 left-0 w-full z-50 transition-colors" style={{ backgroundColor: 'var(--color-bg-navbar)', color: 'var(--color-text-navbar)' }}>
+      <div className="container mx-auto flex justify-between items-center px-4 py-3">
         <Link to="/" className="text-2xl font-bold">Chat App</Link>
 
         {/* Desktop Navigation */}
@@ -91,34 +94,50 @@ const Navbar = () => {
           {!token ? (
             <>
               <Link to="/register">
-                <button className="px-4 py-1.5 bg-blue-500 hover:bg-blue-700 text-white rounded-md transition-colors">
+                <button style={{ backgroundColor: 'var(--color-button-primary)', color: 'var(--color-text-navbar)' }} className="px-4 py-1.5 rounded-md transition-colors hover:opacity-90">
                   Register
                 </button>
               </Link>
               <Link to="/login">
-                <button className="px-4 py-1.5 bg-white text-blue-600 hover:bg-gray-100 rounded-md transition-colors">
+                <button style={{ backgroundColor: 'white', color: 'var(--color-bg-navbar)' }} className="px-4 py-1.5 rounded-md transition-colors hover:opacity-90">
                   Login
                 </button>
               </Link>
+              <ThemeToggle />
             </>
           ) : (
             <>
               <Link to="/home">
-                <button className={`px-4 py-1.5 rounded-md transition-colors ${isActive('/home') ? 'bg-blue-700 text-white' : 'hover:bg-blue-700 text-white'}`}>
+                <button 
+                  className="px-4 py-1.5 rounded-md transition-colors" 
+                  style={{ 
+                    backgroundColor: isActive('/home') ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+                    color: 'var(--color-text-navbar)'
+                  }}
+                >
                   Home
                 </button>
               </Link>
               <Link to="/friends">
-                <button className={`px-4 py-1.5 rounded-md transition-colors ${isActive('/friends') ? 'bg-blue-700 text-white' : 'hover:bg-blue-700 text-white'}`}>
+                <button 
+                  className="px-4 py-1.5 rounded-md transition-colors" 
+                  style={{ 
+                    backgroundColor: isActive('/friends') ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
+                    color: 'var(--color-text-navbar)'
+                  }}
+                >
                   Friends
                 </button>
               </Link>
+              
+              <ThemeToggle />
+              
               <div className="relative" ref={desktopDropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-blue-700"
+                  className="flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-opacity-20 hover:bg-white/20 transition-colors"
                 >
-                  <div className="w-8 h-8 rounded-full bg-blue-800 text-white flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}>
                     <span className="text-sm font-bold">{userName.charAt(0).toUpperCase()}</span>
                   </div>
                   <span className="text-sm font-medium hidden sm:block">{userName}</span>
@@ -127,22 +146,24 @@ const Navbar = () => {
                   </svg>
                 </button>
                 {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white text-black border rounded-lg shadow-lg">
-                    <div className="p-2 border-b">
+                  <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: 'var(--color-bg-dropdown)', borderColor: 'var(--color-border-dropdown)', color: 'var(--color-text-primary)' }}>
+                    <div className="p-3 border-b" style={{ borderColor: 'var(--color-border-light)' }}>
                       <p className="font-bold">{userName}</p>
-                      <p className="text-sm text-gray-500">{userEmail}</p>
+                      <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>{userEmail}</p>
                     </div>
                     <div>
                       <Link 
                         to="/profile"
-                        className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                        className="block w-full text-left px-4 py-2 text-sm transition-colors hover:bg-opacity-10 hover:bg-gray-500"
                         onClick={() => setIsDropdownOpen(false)}
+                        style={{ color: 'var(--color-text-primary)' }}
                       >
                         View Profile
                       </Link>
                       <button
                         onClick={handleLogout}
-                        className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-gray-100"
+                        className="w-full text-left px-4 py-2 text-sm transition-colors hover:bg-opacity-10 hover:bg-gray-500"
+                        style={{ color: 'var(--color-text-error)' }}
                       >
                         Logout
                       </button>
@@ -154,14 +175,16 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* Mobile Hamburger Menu */}
-        <div className="md:hidden relative">
+        {/* Mobile Navigation */}
+        <div className="md:hidden flex items-center space-x-2">
+          <ThemeToggle />
+          
           <button
             onClick={(e) => {
               e.stopPropagation();
               setIsMobileMenuOpen(!isMobileMenuOpen);
             }}
-            className="text-white focus:outline-none"
+            className="p-1 rounded-md hover:bg-opacity-20 hover:bg-white/20 transition-colors"
           >
             {isMobileMenuOpen ? (
               <svg
@@ -198,22 +221,25 @@ const Navbar = () => {
           {isMobileMenuOpen && (
             <div
               ref={mobileDropdownRef}
-              className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg z-40 border border-gray-700"
+              className="absolute right-0 top-full mt-1 w-48 rounded-lg shadow-lg overflow-hidden z-40"
+              style={{ backgroundColor: 'var(--color-bg-secondary)', borderColor: 'var(--color-border-light)' }}
             >
-              <div className="flex flex-col p-2 space-y-2">
+              <div className="flex flex-col p-2 space-y-1">
                 {!token ? (
                   <>
                     <Link
                       to="/register"
-                      className="text-left px-4 py-2 hover:bg-gray-700 rounded-md text-white"
+                      className="text-left px-4 py-2 rounded-md transition-colors hover:bg-opacity-10 hover:bg-gray-500"
                       onClick={() => setIsMobileMenuOpen(false)}
+                      style={{ color: 'var(--color-text-primary)' }}
                     >
                       Register
                     </Link>
                     <Link
                       to="/login"
-                      className="text-left px-4 py-2 hover:bg-gray-700 rounded-md text-white"
+                      className="text-left px-4 py-2 rounded-md transition-colors hover:bg-opacity-10 hover:bg-gray-500"
                       onClick={() => setIsMobileMenuOpen(false)}
+                      style={{ color: 'var(--color-text-primary)' }}
                     >
                       Login
                     </Link>
@@ -222,33 +248,46 @@ const Navbar = () => {
                   <>
                     <Link
                       to="/home"
-                      className="text-left px-4 py-2 hover:bg-gray-700 rounded-md text-white"
+                      className="text-left px-4 py-2 rounded-md transition-colors hover:bg-opacity-10 hover:bg-gray-500"
                       onClick={() => setIsMobileMenuOpen(false)}
+                      style={{ 
+                        backgroundColor: isActive('/home') ? 'var(--color-bg-highlight)' : 'transparent', 
+                        color: 'var(--color-text-primary)' 
+                      }}
                     >
                       Home
                     </Link>
                     <Link
                       to="/friends"
-                      className="text-left px-4 py-2 hover:bg-gray-700 rounded-md text-white"
+                      className="text-left px-4 py-2 rounded-md transition-colors hover:bg-opacity-10 hover:bg-gray-500"
                       onClick={() => setIsMobileMenuOpen(false)}
+                      style={{ 
+                        backgroundColor: isActive('/friends') ? 'var(--color-bg-highlight)' : 'transparent', 
+                        color: 'var(--color-text-primary)' 
+                      }}
                     >
                       Friends
                     </Link>
                     <Link
                       to="/profile"
-                      className="text-left px-4 py-2 hover:bg-gray-700 rounded-md text-white"
+                      className="text-left px-4 py-2 rounded-md transition-colors hover:bg-opacity-10 hover:bg-gray-500"
                       onClick={() => setIsMobileMenuOpen(false)}
+                      style={{ 
+                        backgroundColor: isActive('/profile') ? 'var(--color-bg-highlight)' : 'transparent', 
+                        color: 'var(--color-text-primary)' 
+                      }}
                     >
                       Profile
                     </Link>
-                    <div className="border-t border-gray-700 pt-2">
+                    <div className="border-t pt-2 mt-1" style={{ borderColor: 'var(--color-border-light)' }}>
                       <div className="px-4 py-2">
-                        <p className="font-bold text-white">{userName}</p>
-                        <p className="text-sm text-gray-400">{userEmail}</p>
+                        <p className="font-bold" style={{ color: 'var(--color-text-primary)' }}>{userName}</p>
+                        <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>{userEmail}</p>
                       </div>
                       <button
                         onClick={handleLogout}
-                        className="w-full text-left px-4 py-2 text-sm hover:bg-gray-700 rounded-md text-red-400"
+                        className="w-full text-left px-4 py-2 text-sm rounded-md hover:bg-opacity-10 hover:bg-gray-500"
+                        style={{ color: 'var(--color-text-error)' }}
                       >
                         Logout
                       </button>
