@@ -5,8 +5,10 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
   const [chatRooms, setChatRooms] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [unreadCounts, setUnreadCounts] = useState({});
   
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const userId = localStorage.getItem("userId");
   
   // Get socket context
   const { socket } = useSocket();
@@ -90,7 +92,35 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
   // Initial fetch of chat rooms
   useEffect(() => {
     fetchChatRooms();
+    
+    // Initialize unread counts from localStorage if available
+    const savedUnreadCounts = localStorage.getItem('unreadCounts');
+    if (savedUnreadCounts) {
+      try {
+        setUnreadCounts(JSON.parse(savedUnreadCounts));
+      } catch (e) {
+        console.error("Error parsing saved unread counts:", e);
+        // Reset if there's an error
+        localStorage.setItem('unreadCounts', JSON.stringify({}));
+      }
+    }
   }, []);
+  
+  // Save unread counts to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('unreadCounts', JSON.stringify(unreadCounts));
+  }, [unreadCounts]);
+  
+  // Reset unread count when a chat is selected
+  useEffect(() => {
+    if (selectedChatId) {
+      setUnreadCounts(prev => {
+        const newCounts = { ...prev };
+        delete newCounts[selectedChatId];
+        return newCounts;
+      });
+    }
+  }, [selectedChatId]);
   
   // Set up socket listeners for real-time updates
   useEffect(() => {
@@ -127,10 +157,18 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
         return;
       }
       
+      // Get the chat ID
+      const chatId = getChatUniqueId(updatedChat);
+      if (!chatId) return;
+      
+      // Check if this update contains a new message and it's not from the current user
+      if (updatedChat.lastMessageId && updatedChat.lastMessage) {
+        // Skip message counting here - this is now handled in handleMessageReceived
+        // to avoid double counting
+        console.log(`Chat update contains message ${updatedChat.lastMessageId}, already handled by message event`);
+      }
+      
       setChatRooms((prevChats) => {
-        const chatId = getChatUniqueId(updatedChat);
-        if (!chatId) return prevChats;
-        
         // Remove any duplicates first
         const filteredChats = prevChats.filter(chat => 
           getChatUniqueId(chat) !== chatId
@@ -147,11 +185,12 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
               ...(updatedChat.sender && { sender: updatedChat.sender }),
               ...(updatedChat.recipient && { recipient: updatedChat.recipient }),
               ...(updatedChat.otherUser && { otherUser: updatedChat.otherUser }),
-              updatedAt: new Date().toISOString()
+              ...(updatedChat.lastMessage && { lastMessage: updatedChat.lastMessage }),
+              updatedAt: updatedChat.updatedAt || new Date().toISOString()
             }
           : {
               ...updatedChat,
-              updatedAt: new Date().toISOString()
+              updatedAt: updatedChat.updatedAt || new Date().toISOString()
             };
         
         // Add at the beginning and sort by date
@@ -169,13 +208,47 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
       
       console.log("Message received in chatList:", message);
       
+      // Handle different types of chatId (string or object)
+      const chatId = typeof message.chatId === 'object' 
+        ? message.chatId._id.toString() 
+        : message.chatId.toString();
+      
+      // Increment unread count if this message is from another user and not the selected chat
+      if (message.sender !== userId && chatId !== selectedChatId) {
+        // Check if we've already processed this message ID to prevent double counting
+        const processedMessageIds = JSON.parse(localStorage.getItem('processedMessageIds') || '[]');
+        
+        if (message._id && !processedMessageIds.includes(message._id)) {
+          // Add this message to processed list
+          processedMessageIds.push(message._id);
+          // Keep only the last 100 messages to prevent the list from growing too large
+          while (processedMessageIds.length > 100) {
+            processedMessageIds.shift();
+          }
+          localStorage.setItem('processedMessageIds', JSON.stringify(processedMessageIds));
+          
+          // Increment the counter
+          setUnreadCounts(prev => ({
+            ...prev,
+            [chatId]: (prev[chatId] || 0) + 1
+          }));
+          
+          console.log(`Incremented unread count for chat ${chatId} to ${(unreadCounts[chatId] || 0) + 1}`);
+        } else if (!message._id) {
+          // If message has no ID (rare case), we still count it but can't track it
+          setUnreadCounts(prev => ({
+            ...prev,
+            [chatId]: (prev[chatId] || 0) + 1
+          }));
+          
+          console.log(`Incremented unread count for chat ${chatId} to ${(unreadCounts[chatId] || 0) + 1} (message has no ID)`);
+        } else {
+          console.log(`Skipping already counted message: ${message._id}`);
+        }
+      }
+      
       // Find the chat this message belongs to and move it to the top
       setChatRooms(prevChats => {
-        // Handle different types of chatId (string or object)
-        const chatId = typeof message.chatId === 'object' 
-          ? message.chatId._id.toString() 
-          : message.chatId.toString();
-        
         // Remove any duplicates first
         const filteredChats = prevChats.filter(chat => 
           getChatUniqueId(chat) !== chatId
@@ -193,9 +266,16 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
         
         console.log("Updating chat position:", chatId);
         
+        // Update the chat with latest message preview
+        const updatedChat = {
+          ...chatToUpdate,
+          lastMessage: message.content,
+          updatedAt: new Date().toISOString()
+        };
+        
         // Return with the updated chat at the top
         return [
-          { ...chatToUpdate, updatedAt: new Date().toISOString() },
+          updatedChat,
           ...filteredChats
         ];
       });
@@ -212,9 +292,18 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
       socket.off("chat updated", handleChatUpdate);
       socket.off("message received", handleMessageReceived);
     };
-  }, [socket]);
+  }, [socket, userId, selectedChatId]);
 
   const handleChatSelect = (room) => {
+    const chatId = getChatUniqueId(room);
+    
+    // Clear unread count for this chat
+    setUnreadCounts(prev => {
+      const newCounts = { ...prev };
+      delete newCounts[chatId];
+      return newCounts;
+    });
+    
     onChatSelect(room);
   };
 
@@ -245,40 +334,66 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
         <div className="flex-1 overflow-y-auto">
           {chatRooms.length > 0 ? (
             // Use a Set-based approach to remove any duplicate IDs
-            [...new Map(chatRooms.map(room => [getChatUniqueId(room), room])).values()].map((room) => (
-              <div
-                key={getChatUniqueId(room)}
-                className={`p-3 border-b border-gray-100 flex items-center cursor-pointer hover:bg-gray-50 transition-colors ${
-                  selectedChatId === room._id
-                    ? "bg-blue-50 border-l-4 border-l-blue-500"
-                    : ""
-                } ${isDeletedUser(room.otherUser) ? "opacity-60" : ""}`}
-                onClick={() => handleChatSelect(room)}
-              >
-                <div className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center text-blue-500 mr-3 ${
-                  isDeletedUser(room.otherUser) ? "bg-gray-200" : "bg-blue-100"
-                }`}>
-                  <span className="font-semibold">
-                    {room.otherUser?.name?.charAt(0)?.toUpperCase() || "?"}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center">
-                    <h3 className="text-sm font-medium text-gray-900 truncate">
-                      {room.otherUser?.name || "Unknown User"}
-                    </h3>
-                    {isDeletedUser(room.otherUser) && (
-                      <span className="ml-2 px-1.5 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
-                        Deleted
+            [...new Map(chatRooms.map(room => [getChatUniqueId(room), room])).values()].map((room) => {
+              const chatId = getChatUniqueId(room);
+              const unreadCount = unreadCounts[chatId] || 0;
+              
+              return (
+                <div
+                  key={chatId}
+                  className={`p-3 border-b border-gray-100 flex items-center cursor-pointer hover:bg-gray-50 transition-colors ${
+                    selectedChatId === room._id
+                      ? "bg-blue-50 border-l-4 border-l-blue-500"
+                      : ""
+                  } ${isDeletedUser(room.otherUser) ? "opacity-60" : ""}`}
+                  onClick={() => handleChatSelect(room)}
+                >
+                  <div className={`relative flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center text-blue-500 mr-3 ${
+                    isDeletedUser(room.otherUser) ? "bg-gray-200" : "bg-blue-100"
+                  }`}>
+                    <span className="font-semibold">
+                      {room.otherUser?.name?.charAt(0)?.toUpperCase() || "?"}
+                    </span>
+                    
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                        {unreadCount > 9 ? '9+' : unreadCount}
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 truncate">
-                    {room.otherUser?.email || "No email"}
-                  </p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <h3 className="text-sm font-medium text-gray-900 truncate">
+                          {room.otherUser?.name || "Unknown User"}
+                        </h3>
+                        {isDeletedUser(room.otherUser) && (
+                          <span className="ml-2 px-1.5 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
+                            Deleted
+                          </span>
+                        )}
+                      </div>
+                      
+                      {unreadCount > 0 && (
+                        <span className="ml-1 text-xs text-white bg-blue-500 rounded-full px-2 py-0.5 font-bold">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <p className="text-xs text-gray-500 truncate max-w-[70%]">
+                        {room.lastMessage || room.otherUser?.email || "No messages yet"}
+                      </p>
+                      {room.updatedAt && (
+                        <span className="text-xs text-gray-400">
+                          {new Date(room.updatedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="p-6 text-center">
               <p className="text-gray-500 text-sm">

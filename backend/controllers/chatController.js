@@ -165,25 +165,40 @@ const sendMessage = async (req, res) => {
         });
       }
       
-      // Send to chat room (both users will be in this room)
+      // Strategy: Only send to room for message events
+      // If user is in multiple tabs/devices, they'll all get it via room
       io.to(chatRoomId).emit('message received', messageData);
       
-      // As a fallback, also emit directly to both users
-      if (senderIdStr) {
+      // Only directly emit to users if they aren't in the room
+      // First check if sender has a socket in the room
+      const senderInRoom = Array.from(io.sockets.sockets.values())
+        .some(s => s.userId === senderIdStr && s.rooms.has(chatRoomId));
+      
+      // Then check if recipient has a socket in the room
+      const recipientInRoom = Array.from(io.sockets.sockets.values())
+        .some(s => s.userId === recipientIdStr && s.rooms.has(chatRoomId));
+      
+      // Only send direct message if user isn't in room
+      if (!senderInRoom && senderIdStr) {
+        console.log(`Sender not in room, sending direct message to: ${senderIdStr}`);
         io.to(senderIdStr).emit('message received', messageData);
       }
       
-      if (recipientId) {
+      if (!recipientInRoom && recipientId) {
+        console.log(`Recipient not in room, sending direct message to: ${recipientId}`);
         io.to(recipientId).emit('message received', messageData);
       }
       
-      // Send chat updates as a separate event
+      // Send chat updates as a separate event with the message ID included
+      // This helps clients avoid double-counting messages
       const chatData = {
         ...chat.toObject(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        lastMessageId: newMessage._id, // Include the message ID that triggered this update
+        lastMessage: content // Include the message content for preview
       };
       
-      // Update the chat list for both users
+      // Update the chat list for both users (directly to user rooms, not the chat room)
       if (senderIdStr) {
         io.to(senderIdStr).emit('chat updated', chatData);
       }
