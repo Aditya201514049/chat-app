@@ -45,7 +45,8 @@ const Navbar = () => {
   }, [token]);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
+    const handleClickOrTouchOutside = (event) => {
+      // Handle desktop dropdown
       if (
         desktopDropdownRef.current &&
         !desktopDropdownRef.current.contains(event.target)
@@ -53,19 +54,30 @@ const Navbar = () => {
         setIsDropdownOpen(false);
       }
       
-      // For the mobile menu, we need to check if the click target is not the toggle button
-      // or its children (the hamburger or X icon)
+      // Handle mobile dropdown - need to check if clicked/touched element is not the toggle button
+      const toggleButton = document.querySelector('[data-mobile-toggle="true"]');
+      const isToggleButtonClick = toggleButton && (
+        toggleButton === event.target || 
+        toggleButton.contains(event.target)
+      );
+      
       if (
         mobileDropdownRef.current &&
         !mobileDropdownRef.current.contains(event.target) &&
-        !event.target.closest('[data-mobile-toggle]')
+        !isToggleButtonClick
       ) {
         setIsMobileMenuOpen(false);
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    // Add multiple event listeners for different device types
+    document.addEventListener("mousedown", handleClickOrTouchOutside);
+    document.addEventListener("touchstart", handleClickOrTouchOutside);
+    
+    return () => {
+      document.removeEventListener("mousedown", handleClickOrTouchOutside);
+      document.removeEventListener("touchstart", handleClickOrTouchOutside);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -187,8 +199,13 @@ const Navbar = () => {
             onClick={() => {
               setIsMobileMenuOpen(!isMobileMenuOpen);
             }}
+            onTouchEnd={(e) => {
+              e.preventDefault(); // Prevent default to avoid double-firing
+              setIsMobileMenuOpen(!isMobileMenuOpen);
+            }}
             data-mobile-toggle="true"
-            className="p-1 rounded-md hover:bg-opacity-20 hover:bg-white/20 transition-colors"
+            className="p-2 rounded-md hover:bg-opacity-20 hover:bg-white/20 transition-colors"
+            style={{ touchAction: "manipulation" }} // Improve touch handling
           >
             {isMobileMenuOpen ? (
               <svg
@@ -225,15 +242,21 @@ const Navbar = () => {
           {isMobileMenuOpen && (
             <div
               ref={mobileDropdownRef}
-              className="absolute right-0 top-full mt-1 w-48 rounded-lg shadow-lg overflow-hidden z-40"
-              style={{ backgroundColor: 'var(--color-bg-secondary)', borderColor: 'var(--color-border-light)' }}
+              className="absolute right-0 top-full mt-1 w-56 rounded-lg shadow-lg overflow-hidden z-40"
+              style={{ 
+                backgroundColor: 'var(--color-bg-secondary)', 
+                borderColor: 'var(--color-border-light)',
+                maxHeight: '80vh',
+                overflowY: 'auto',
+                touchAction: 'pan-y'
+              }}
             >
               <div className="flex flex-col p-2 space-y-1">
                 {!token ? (
                   <>
                     <Link
                       to="/register"
-                      className="text-left px-4 py-2 rounded-md transition-colors hover:bg-opacity-10 hover:bg-gray-500"
+                      className="text-left px-4 py-3 rounded-md transition-colors hover:bg-opacity-10 hover:bg-gray-500"
                       onClick={() => setIsMobileMenuOpen(false)}
                       style={{ color: 'var(--color-text-primary)' }}
                     >
@@ -241,7 +264,7 @@ const Navbar = () => {
                     </Link>
                     <Link
                       to="/login"
-                      className="text-left px-4 py-2 rounded-md transition-colors hover:bg-opacity-10 hover:bg-gray-500"
+                      className="text-left px-4 py-3 rounded-md transition-colors hover:bg-opacity-10 hover:bg-gray-500"
                       onClick={() => setIsMobileMenuOpen(false)}
                       style={{ color: 'var(--color-text-primary)' }}
                     >
@@ -252,7 +275,7 @@ const Navbar = () => {
                   <>
                     <Link
                       to="/home"
-                      className="text-left px-4 py-2 rounded-md transition-colors hover:bg-opacity-10 hover:bg-gray-500"
+                      className="text-left px-4 py-3 rounded-md transition-colors hover:bg-opacity-10 hover:bg-gray-500"
                       onClick={() => setIsMobileMenuOpen(false)}
                       style={{ 
                         backgroundColor: isActive('/home') ? 'var(--color-bg-highlight)' : 'transparent', 
@@ -263,7 +286,7 @@ const Navbar = () => {
                     </Link>
                     <Link
                       to="/friends"
-                      className="text-left px-4 py-2 rounded-md transition-colors hover:bg-opacity-10 hover:bg-gray-500"
+                      className="text-left px-4 py-3 rounded-md transition-colors hover:bg-opacity-10 hover:bg-gray-500"
                       onClick={() => setIsMobileMenuOpen(false)}
                       style={{ 
                         backgroundColor: isActive('/friends') ? 'var(--color-bg-highlight)' : 'transparent', 
@@ -274,7 +297,7 @@ const Navbar = () => {
                     </Link>
                     <Link
                       to="/profile"
-                      className="text-left px-4 py-2 rounded-md transition-colors hover:bg-opacity-10 hover:bg-gray-500"
+                      className="text-left px-4 py-3 rounded-md transition-colors hover:bg-opacity-10 hover:bg-gray-500"
                       onClick={() => setIsMobileMenuOpen(false)}
                       style={{ 
                         backgroundColor: isActive('/profile') ? 'var(--color-bg-highlight)' : 'transparent', 
@@ -290,7 +313,7 @@ const Navbar = () => {
                       </div>
                       <button
                         onClick={handleLogout}
-                        className="w-full text-left px-4 py-2 text-sm rounded-md hover:bg-opacity-10 hover:bg-gray-500"
+                        className="w-full text-left px-4 py-3 text-sm rounded-md hover:bg-opacity-10 hover:bg-gray-500"
                         style={{ color: 'var(--color-text-error)' }}
                       >
                         Logout
