@@ -128,13 +128,29 @@ export const SocketProvider = ({ children }) => {
 
   // Join a chat room
   const joinChatRoom = useCallback((chatId) => {
-    if (!socket || !isConnected || !chatId) {
-      console.log(`Cannot join chat room ${chatId}: socket connected: ${isConnected}`);
-      return;
+    if (!socket || !isConnected) {
+      console.log(`Cannot join chat room: socket connected: ${isConnected}`);
+      return false;
     }
     
-    console.log(`Joining chat room: ${chatId}`);
-    socket.emit("join chat", chatId);
+    if (!chatId) {
+      console.warn('Cannot join chat room: No chatId provided');
+      return false;
+    }
+    
+    // Convert to string if it's an object
+    const roomId = typeof chatId === 'object' ? chatId._id.toString() : chatId.toString();
+    
+    console.log(`Joining chat room: ${roomId}`);
+    socket.emit("join chat", roomId);
+    
+    // Verify successful join by emitting a status request
+    setTimeout(() => {
+      console.log(`Verifying join to chat room: ${roomId}`);
+      socket.emit("check room status", roomId);
+    }, 500);
+    
+    return true;
   }, [socket, isConnected]);
 
   // Send a message - now using the HTTP approach from conversation.jsx

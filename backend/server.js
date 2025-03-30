@@ -39,12 +39,21 @@ const connectedUsers = new Map();
 io.use((socket, next) => {
   try {
     const userId = socket.handshake.auth.userId;
+    const token = socket.handshake.auth.token;
+    
     if (!userId) {
+      console.error("Socket auth failed: No userId provided");
       return next(new Error('Authentication error: userId not provided'));
+    }
+    
+    if (!token) {
+      console.error("Socket auth failed: No token provided");
+      return next(new Error('Authentication error: token not provided'));
     }
     
     console.log(`Socket authenticating user: ${userId}`);
     socket.userId = userId; // Store userId in socket object for future reference
+    socket.userToken = token; // Store token for potential verification
     next();
   } catch (error) {
     console.error("Socket authentication error:", error);
@@ -53,7 +62,7 @@ io.use((socket, next) => {
 });
 
 io.on('connection', (socket) => {
-  console.log('New client connected:', socket.id);
+  console.log('New client connected with ID:', socket.id);
   
   // User authentication and setup
   socket.on('setup', (userData) => {
@@ -62,9 +71,11 @@ io.on('connection', (socket) => {
       
       // Store user socket mapping
       connectedUsers.set(userId, socket.id);
+      
+      // Join a room with the user's ID to send them direct messages
       socket.join(userId);
       
-      console.log(`User ${userId} connected and setup complete. Active users: ${connectedUsers.size}`);
+      console.log(`User ${userId} connected and setup complete. Socket ID: ${socket.id}. Active users: ${connectedUsers.size}`);
       
       // Notify the client that setup is complete
       socket.emit('connected');
@@ -84,11 +95,49 @@ io.on('connection', (socket) => {
     }
     
     const roomId = chatId.toString();
+    
+    // Leave all other chat rooms (not user rooms) before joining new one
+    Array.from(socket.rooms)
+      .filter(room => room !== socket.id && room !== socket.userId)
+      .forEach(room => {
+        console.log(`Leaving previous chat room: ${room}`);
+        socket.leave(room);
+      });
+    
+    // Join the new chat room
     socket.join(roomId);
-    console.log(`User joined chat: ${roomId}`);
+    console.log(`User ${socket.userId} joined chat room: ${roomId}`);
+    
+    // Debug: print all rooms this socket is in
+    console.log(`Socket ${socket.id} is now in rooms:`, Array.from(socket.rooms));
   });
 
-  // Handle new message
+  // Add this after the join chat event handler
+  socket.on('check room status', (chatId) => {
+    if (!chatId) return;
+    
+    const roomId = chatId.toString();
+    const roomClients = io.sockets.adapter.rooms.get(roomId);
+    const isInRoom = socket.rooms.has(roomId);
+    const clientCount = roomClients ? roomClients.size : 0;
+    
+    console.log(`Room status check for ${roomId}: in room=${isInRoom}, total clients=${clientCount}`);
+    
+    // If not in room, rejoin it
+    if (!isInRoom) {
+      console.log(`Socket ${socket.id} not in room ${roomId}, rejoining...`);
+      socket.join(roomId);
+    }
+    
+    // Send the status back to the client
+    socket.emit('room status', {
+      chatId: roomId,
+      isInRoom,
+      clientCount
+    });
+  });
+
+  // Handle new message - Add reliability layer even though HTTP is primary method
   socket.on('new message', (newMessageData) => {
     console.log('New message received from socket:', newMessageData);
     
@@ -100,28 +149,47 @@ io.on('connection', (socket) => {
     }
     
     // Convert chatId to string if it's an object
-    const chatRoomId = typeof chatId === 'object' ? chatId._id : chatId.toString();
+    const chatRoomId = typeof chatId === 'object' ? chatId._id.toString() : chatId.toString();
     
-    // Join the chat room if not already
-    socket.join(chatRoomId);
+    // Ensure the sender is in the chat room
+    if (!socket.rooms.has(chatRoomId)) {
+      console.log(`Auto-joining sender to chat room: ${chatRoomId} before message processing`);
+      socket.join(chatRoomId);
+    }
     
-    // IMPORTANT: DO NOT broadcast to the chat room here 
-    // The message will be broadcast through the sendMessage controller
-    // This avoids message duplication
-    console.log(`Socket message received, will be processed via HTTP endpoint: ${chatRoomId}`);
+    // IMPORTANT: The main message broadcasting happens in the controller after DB save
+    // This is just a safety layer in case the HTTP endpoint fails or the socket
+    // needs to handle message broadcasting directly
     
-    // The actual broadcasting happens in the controller after DB save
+    // We'll log but not broadcast to avoid duplication with the HTTP endpoint
+    console.log(`Socket message received for chat: ${chatRoomId}. Will be handled via HTTP.`);
   });
 
   // Handle typing status
   socket.on('typing', (chatId) => {
-    console.log(`User typing in chat: ${chatId}`);
-    socket.to(chatId).emit('typing', chatId);
+    if (!chatId) return;
+    
+    const roomId = chatId.toString();
+    console.log(`User ${socket.userId} typing in chat: ${roomId}`);
+    
+    // Make sure we're in the room before broadcasting
+    if (!socket.rooms.has(roomId)) {
+      console.log(`Auto-joining chat room for typing: ${roomId}`);
+      socket.join(roomId);
+    }
+    
+    // Broadcast typing event to everyone in the room EXCEPT sender
+    socket.to(roomId).emit('typing', roomId);
   });
 
   socket.on('stop typing', (chatId) => {
-    console.log(`User stopped typing in chat: ${chatId}`);
-    socket.to(chatId).emit('stop typing');
+    if (!chatId) return;
+    
+    const roomId = chatId.toString();
+    console.log(`User ${socket.userId} stopped typing in chat: ${roomId}`);
+    
+    // Broadcast stop typing event to everyone in the room EXCEPT sender
+    socket.to(roomId).emit('stop typing');
   });
 
   // Handle disconnect

@@ -71,32 +71,41 @@ const createChat = async (req, res) => {
   }
 };
 
-// Send a new message to a chat
+// Send message
 const sendMessage = async (req, res) => {
   try {
+    // Extract message details
     const { chatId, content, tempId } = req.body;
     const senderId = req.user._id;
 
-    // Verify that the chat exists
-    const chat = await Chat.findById(chatId)
-      .populate('sender', 'name email')
-      .populate('recipient', 'name email');
-      
+    if (!chatId || !content) {
+      return res.status(400).json({ message: 'Please provide all required fields' });
+    }
+
+    // Validate chat ID
+    if (!mongoose.Types.ObjectId.isValid(chatId)) {
+      return res.status(400).json({ message: 'Invalid chat ID format' });
+    }
+
+    // Find chat and validate that user is part of it
+    const chat = await Chat.findById(chatId);
+
     if (!chat) {
       return res.status(404).json({ message: 'Chat not found' });
     }
 
-    // Ensure the sender is part of the chat
+    // Convert IDs to strings for comparison
     const senderIdStr = senderId.toString();
-    const chatSenderIdStr = chat.sender && chat.sender._id ? chat.sender._id.toString() : null;
-    const chatRecipientIdStr = chat.recipient && chat.recipient._id ? chat.recipient._id.toString() : null;
-    
+    const chatSenderIdStr = chat.sender ? chat.sender.toString() : null;
+    const chatRecipientIdStr = chat.recipient ? chat.recipient.toString() : null;
+
+    // Validate user is part of the chat
     if (senderIdStr !== chatSenderIdStr && senderIdStr !== chatRecipientIdStr) {
-      return res.status(403).json({ message: 'Unauthorized to send messages in this chat' });
+      return res.status(403).json({ message: 'You are not authorized to send messages in this chat' });
     }
 
-    // Create the new message
-    const newMessage = new Message({ 
+    // Create and save the new message
+    const newMessage = new Message({
       sender: senderId, 
       content, 
       chatId,
@@ -125,11 +134,48 @@ const sendMessage = async (req, res) => {
     // Emit socket event if available
     const io = req.app.get('io');
     if (io) {
-      console.log(`Server emitting message to chat room: ${chat._id}, tempId: ${tempId}`);
+      const chatRoomId = chat._id.toString();
+      console.log(`Server emitting message to chat room: ${chatRoomId}, tempId: ${tempId}`);
       
-      // Send to chat room ONLY (both users will be in this room)
-      // DO NOT emit directly to users separately, as that causes duplication
-      io.to(chat._id.toString()).emit('message received', messageData);
+      // IMPORTANT: Double-check sockets are properly joined to the chat room
+      // Get all clients in the chat room
+      const roomClients = io.sockets.adapter.rooms.get(chatRoomId);
+      const clientCount = roomClients ? roomClients.size : 0;
+      console.log(`Chat room ${chatRoomId} has ${clientCount} connected clients`);
+
+      // If no clients in the room, try to find sockets for both users
+      if (clientCount === 0) {
+        console.log(`No clients found in chat room ${chatRoomId}. Attempting to notify by user ID.`);
+        
+        // Find all socket instances for each user
+        const senderSockets = Array.from(io.sockets.sockets.values())
+          .filter(s => s.userId === senderIdStr);
+        
+        const recipientSockets = Array.from(io.sockets.sockets.values())
+          .filter(s => s.userId === recipientIdStr);
+        
+        console.log(`Found ${senderSockets.length} sockets for sender and ${recipientSockets.length} for recipient`);
+        
+        // Join each socket to the chat room
+        [...senderSockets, ...recipientSockets].forEach(socket => {
+          if (!socket.rooms.has(chatRoomId)) {
+            console.log(`Joining socket ${socket.id} to chat room ${chatRoomId}`);
+            socket.join(chatRoomId);
+          }
+        });
+      }
+      
+      // Send to chat room (both users will be in this room)
+      io.to(chatRoomId).emit('message received', messageData);
+      
+      // As a fallback, also emit directly to both users
+      if (senderIdStr) {
+        io.to(senderIdStr).emit('message received', messageData);
+      }
+      
+      if (recipientId) {
+        io.to(recipientId).emit('message received', messageData);
+      }
       
       // Send chat updates as a separate event
       const chatData = {
@@ -145,6 +191,8 @@ const sendMessage = async (req, res) => {
       if (recipientId) {
         io.to(recipientId).emit('chat updated', chatData);
       }
+    } else {
+      console.warn('Socket.io instance not available, skipping real-time updates');
     }
 
     // Respond with the new message

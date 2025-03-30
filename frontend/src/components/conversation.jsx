@@ -177,6 +177,9 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError }) 
       const msgChatId = typeof newMessage.chatId === 'object' 
           ? newMessage.chatId._id 
           : newMessage.chatId;
+      
+      // Debug: log comparison values to help diagnose issues
+      console.log(`Comparing message chatId: ${msgChatId} with current chatId: ${chatId}`);
           
       if (chatId !== msgChatId) {
         console.log(`Message for different chat (${msgChatId}), current chat: ${chatId}`);
@@ -228,7 +231,9 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError }) 
           if (msg.content === newMessage.content && msg.sender === newMessage.sender) {
             const msgTime = new Date(msg.createdAt || msg.timestamp || Date.now()).getTime();
             const newMsgTime = new Date(newMessage.createdAt || newMessage.timestamp || Date.now()).getTime();
-            return Math.abs(msgTime - newMsgTime) < 3000;
+            const timeDiff = Math.abs(msgTime - newMsgTime);
+            console.log(`Time difference between similar messages: ${timeDiff}ms`);
+            return timeDiff < 3000;
           }
           return false;
         });
@@ -248,13 +253,20 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError }) 
     };
     
     // Listen for typing indicators
-    const handleTyping = () => {
-      setIsTyping(true);
+    const handleTyping = (chatRoomId) => {
+      console.log(`Typing indicator received for chat: ${chatRoomId}`);
+      // Only update typing status if it's for our current chat
+      if (chatRoomId === chatId) {
+        setIsTyping(true);
+      }
     };
     
     const handleStopTyping = () => {
       setIsTyping(false);
     };
+    
+    // Debugging: Log which events we're listening for
+    console.log(`Setting up message listeners for chat ${chatId}, socket connected: ${Boolean(socket)}`);
     
     // Set up listeners
     socket.on("message received", handleNewMessage);
@@ -263,6 +275,7 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError }) 
     
     // Clean up listeners
     return () => {
+      console.log(`Cleaning up message listeners for chat ${chatId}`);
       socket.off("message received", handleNewMessage);
       socket.off("typing", handleTyping);
       socket.off("stop typing", handleStopTyping);
@@ -410,24 +423,45 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError }) 
   
   // Handle typing indicator
   const handleTyping = (e) => {
-    setMessageContent(e.target.value);
-    
-    // Don't send typing events for empty messages
-    if (!e.target.value.trim()) {
-      stopTyping(chatId);
-      return;
+    // Only trigger typing events if the input changes (not for backspace when empty, etc.)
+    if (e.target.value.trim() !== '' && e.target.value !== messageContent) {
+      // Clear any existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+      
+      // Send typing event to socket
+      if (chatId) {
+        console.log(`Emitting typing event for chat: ${chatId}`);
+        startTyping(chatId);
+      }
+      
+      // Set timeout to automatically stop typing after 3 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        if (chatId) {
+          console.log(`Emitting stop typing event for chat: ${chatId}`);
+          stopTyping(chatId);
+        }
+        typingTimeoutRef.current = null;
+      }, 3000);
     }
     
-    // Send typing indicator
-    startTyping(chatId);
+    // Update message content (both empty and non-empty)
+    setMessageContent(e.target.value);
     
-    // Clear previous timeout
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    
-    // Set timeout to stop typing indicator after 3 seconds of inactivity
-    typingTimeoutRef.current = setTimeout(() => {
-      stopTyping(chatId);
-    }, 3000);
+    // If the input is now empty, stop typing indicator
+    if (e.target.value.trim() === '') {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+      
+      if (chatId) {
+        console.log(`Input empty, stopping typing for chat: ${chatId}`);
+        stopTyping(chatId);
+      }
+    }
   };
 
   return (
