@@ -337,7 +337,7 @@ const sendMessage = async (req, res) => {
     }
 
     // Determine recipient - the other user in the chat
-    const recipientId = senderIdStr === chatSenderIdStr
+    const chatRecipientId = senderIdStr === chatSenderIdStr
       ? chatRecipientIdStr
       : chatSenderIdStr;
 
@@ -369,7 +369,7 @@ const sendMessage = async (req, res) => {
           .filter(s => s.userId === senderIdStr);
         
         const recipientSockets = Array.from(io.sockets.sockets.values())
-          .filter(s => s.userId === recipientIdStr);
+          .filter(s => s.userId === chatRecipientIdStr);
         
         console.log(`Found ${senderSockets.length} sockets for sender and ${recipientSockets.length} for recipient`);
         
@@ -393,7 +393,7 @@ const sendMessage = async (req, res) => {
       
       // Then check if recipient has a socket in the room
       const recipientInRoom = Array.from(io.sockets.sockets.values())
-        .some(s => s.userId === recipientIdStr && s.rooms.has(chatRoomId));
+        .some(s => s.userId === chatRecipientIdStr && s.rooms.has(chatRoomId));
       
       // Only send direct message if user isn't in room
       if (!senderInRoom && senderIdStr) {
@@ -401,9 +401,9 @@ const sendMessage = async (req, res) => {
         io.to(senderIdStr).emit('message received', messageData);
       }
       
-      if (!recipientInRoom && recipientId) {
-        console.log(`Recipient not in room, sending direct message to: ${recipientId}`);
-        io.to(recipientId).emit('message received', messageData);
+      if (!recipientInRoom && chatRecipientId) {
+        console.log(`Recipient not in room, sending direct message to: ${chatRecipientId}`);
+        io.to(chatRecipientId).emit('message received', messageData);
       }
       
       // Send chat updates as a separate event with the message ID included
@@ -420,8 +420,8 @@ const sendMessage = async (req, res) => {
         io.to(senderIdStr).emit('chat updated', chatData);
       }
       
-      if (recipientId) {
-        io.to(recipientId).emit('chat updated', chatData);
+      if (chatRecipientId) {
+        io.to(chatRecipientId).emit('chat updated', chatData);
       }
     } else {
       console.warn('Socket.io instance not available, skipping real-time updates');
