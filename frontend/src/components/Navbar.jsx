@@ -52,9 +52,13 @@ const Navbar = () => {
       ) {
         setIsDropdownOpen(false);
       }
+      
+      // For the mobile menu, we need to check if the click target is not the toggle button
+      // or its children (the hamburger or X icon)
       if (
         mobileDropdownRef.current &&
-        !mobileDropdownRef.current.contains(event.target)
+        !mobileDropdownRef.current.contains(event.target) &&
+        !event.target.closest('[data-mobile-toggle]')
       ) {
         setIsMobileMenuOpen(false);
       }
@@ -180,10 +184,10 @@ const Navbar = () => {
           <ThemeToggle />
           
           <button
-            onClick={(e) => {
-              e.stopPropagation();
+            onClick={() => {
               setIsMobileMenuOpen(!isMobileMenuOpen);
             }}
+            data-mobile-toggle="true"
             className="p-1 rounded-md hover:bg-opacity-20 hover:bg-white/20 transition-colors"
           >
             {isMobileMenuOpen ? (
