@@ -174,6 +174,44 @@ const HomePage2 = () => {
     }
   };
 
+  // When a chat ID has changed (due to chat re-creation)
+  const handleChatIdChanged = async (newChatId) => {
+    console.log(`Chat ID has changed to ${newChatId}, fetching new chat data`);
+    
+    if (newChatId === selectedChatId) {
+      console.log("New chat ID is the same as current, ignoring");
+      return;
+    }
+    
+    // Fetch the updated chat data
+    const updatedChat = await fetchChatById(newChatId);
+    
+    if (updatedChat) {
+      console.log("Updated chat data received:", updatedChat);
+      // Update the selected chat
+      setSelectedChat(updatedChat);
+      setSelectedChatId(newChatId);
+      
+      // Make sure we join the new chat room
+      if (isConnected) {
+        console.log(`Joining new chat room: ${newChatId}`);
+        joinChatRoom(newChatId);
+      }
+      
+      // Update URL if needed
+      if (window.history && window.history.replaceState) {
+        const newUrl = `/?chat=${newChatId}`;
+        window.history.replaceState(
+          { selectedChatId: newChatId },
+          '',
+          newUrl
+        );
+      }
+    } else {
+      console.error("Failed to fetch updated chat data");
+    }
+  };
+
   // If we're in an error state or redirecting, show minimal UI
   if (authError) {
     return (
@@ -240,6 +278,7 @@ const HomePage2 = () => {
                   detail: { type: 'AUTH_ERROR' }
                 }));
               }}
+              onChatIdChanged={handleChatIdChanged}
             />
           ) : (
             <div className="flex items-center justify-center h-full bg-gray-50">

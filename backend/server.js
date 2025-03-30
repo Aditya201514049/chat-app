@@ -6,6 +6,7 @@ const chatRoutes = require('./routes/chatRoutes');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
+const mongoose = require('mongoose');
 
 dotenv.config();
 connectDB();
@@ -218,6 +219,30 @@ io.on('connection', (socket) => {
 
 // Make io available globally so controllers can access it
 app.set('io', io);
+
+// Add error handling middleware after all routes
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  console.error(err.stack);
+  
+  res.status(500).json({
+    message: 'An unexpected error occurred on the server',
+    error: process.env.NODE_ENV === 'production' ? 'Unknown error' : err.message
+  });
+});
+
+// Improve MongoDB connection handling
+mongoose.connection.on('error', (err) => {
+  console.error('MongoDB connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('MongoDB disconnected');
+  // Attempt to reconnect
+  setTimeout(() => {
+    connectDB();
+  }, 5000);
+});
 
 // Start the server
 const PORT = process.env.PORT || 5000;

@@ -13,7 +13,7 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
   // Get socket context
   const { socket } = useSocket();
 
-  const fetchChatRooms = async () => {
+    const fetchChatRooms = async () => {
     setLoading(true);
     setError("");
     
@@ -27,11 +27,11 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
         return;
       }
       
-      const response = await fetch(`${API_URL}/api/chats/getchats`, {
-        headers: {
+        const response = await fetch(`${API_URL}/api/chats/getchats`, {
+          headers: {
           Authorization: `Bearer ${token}`,
-        },
-      });
+          },
+        });
 
       if (response.status === 401) {
         // This indicates an authentication issue - could be invalid token,
@@ -70,7 +70,7 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
       );
       
       setChatRooms(validChats);
-    } catch (error) {
+      } catch (error) {
       console.error("Failed to fetch chat rooms", error);
       if (error.message === "Failed to fetch") {
         setError("Network error. Please check your connection and try again.");
@@ -411,7 +411,7 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto">
-          {chatRooms.length > 0 ? (
+      {chatRooms.length > 0 ? (
             // Use a Set-based approach to remove any duplicate IDs
             [...new Map(chatRooms.map(room => [getChatUniqueId(room), room])).values()].map((room) => {
               const chatId = getChatUniqueId(room);
@@ -421,12 +421,12 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
                 <div
                   key={chatId}
                   className={`p-3 border-b border-gray-100 flex items-center cursor-pointer hover:bg-gray-50 transition-colors ${
-                    selectedChatId === room._id
+              selectedChatId === room._id
                       ? "bg-blue-50 border-l-4 border-l-blue-500"
                       : ""
                   } ${isDeletedUser(room.otherUser) ? "opacity-60" : ""}`}
-                  onClick={() => handleChatSelect(room)}
-                >
+            onClick={() => handleChatSelect(room)}
+          >
                   <div className={`relative flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center text-blue-500 mr-3 ${
                     isDeletedUser(room.otherUser) ? "bg-gray-200" : "bg-blue-100"
                   }`}>
@@ -442,7 +442,7 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center">
+            <div className="flex items-center">
                         <h3 className="text-sm font-medium text-gray-900 truncate">
                           {room.otherUser?.name || "Unknown User"}
                         </h3>
@@ -456,9 +456,9 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
                       {unreadCount > 0 && (
                         <span className="ml-1 text-xs text-white bg-blue-500 rounded-full px-2 py-0.5 font-bold">
                           {unreadCount > 99 ? '99+' : unreadCount}
-                        </span>
+                </span>
                       )}
-                    </div>
+              </div>
                     <div className="flex justify-between items-center">
                       <p className="text-xs text-gray-500 truncate max-w-[70%]">
                         {room.lastMessage || room.otherUser?.email || "No messages yet"}
@@ -468,9 +468,9 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
                           {new Date(room.updatedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                         </span>
                       )}
-                    </div>
-                  </div>
-                </div>
+              </div>
+            </div>
+          </div>
               );
             })
           ) : (

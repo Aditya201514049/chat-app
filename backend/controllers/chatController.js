@@ -74,24 +74,217 @@ const createChat = async (req, res) => {
 // Send message
 const sendMessage = async (req, res) => {
   try {
+    console.log("Received message request:", JSON.stringify(req.body, null, 2));
+    
     // Extract message details
-    const { chatId, content, tempId } = req.body;
+    const { chatId, content, tempId, recipientId } = req.body;
     const senderId = req.user._id;
 
+    // Detailed validation logging
+    if (!chatId) console.log("Missing chatId in request");
+    if (!content) console.log("Missing content in request");
+    
     if (!chatId || !content) {
-      return res.status(400).json({ message: 'Please provide all required fields' });
+      return res.status(400).json({ 
+        message: 'Please provide all required fields',
+        code: 'MISSING_FIELDS'
+      });
     }
 
     // Validate chat ID
     if (!mongoose.Types.ObjectId.isValid(chatId)) {
-      return res.status(400).json({ message: 'Invalid chat ID format' });
+      console.log(`Invalid chatId format: ${chatId}`);
+      return res.status(400).json({ 
+        message: 'Invalid chat ID format',
+        code: 'INVALID_CHAT_ID'
+      });
     }
 
     // Find chat and validate that user is part of it
-    const chat = await Chat.findById(chatId);
+    let chat;
+    try {
+      chat = await Chat.findById(chatId);
+      console.log("Chat found:", chat ? "yes" : "no");
+    } catch (err) {
+      console.error(`Error finding chat ${chatId}:`, err);
+      return res.status(500).json({
+        message: 'Database error when finding chat',
+        code: 'DB_ERROR',
+        details: err.message
+      });
+    }
 
     if (!chat) {
-      return res.status(404).json({ message: 'Chat not found' });
+      // Chat not found - this could happen if the chat was deleted
+      // Let's check if the users exist and create a new chat
+      console.log(`Chat ${chatId} not found, attempting to find users and create a new chat. Recipient ID: ${recipientId}`);
+      
+      if (!recipientId) {
+        console.log("No recipientId provided for chat recovery");
+        return res.status(404).json({ 
+          message: 'Chat not found and no recipient ID provided for recovery',
+          code: 'CHAT_NOT_FOUND_NO_RECIPIENT'
+        });
+      }
+      
+      if (!mongoose.Types.ObjectId.isValid(recipientId)) {
+        console.log(`Invalid recipientId format: ${recipientId}`);
+        return res.status(400).json({ 
+          message: 'Invalid recipient ID format',
+          code: 'INVALID_RECIPIENT_ID'
+        });
+      }
+      
+      try {
+        // Look for a different chat between these users
+        const userId = req.user._id.toString();
+        
+        // Try to find an existing chat with the same participants (in any direction)
+        // This is a fallback in case the original chat ID is no longer valid
+        const alternativeChat = await Chat.findOne({
+          $or: [
+            { sender: req.user._id, recipient: recipientId },
+            { sender: recipientId, recipient: req.user._id }
+          ]
+        });
+        
+        if (alternativeChat) {
+          console.log(`Found alternative chat ${alternativeChat._id} between the same users`);
+          
+          // Create and save the new message using the alternative chat
+          const newMessage = new Message({
+            sender: senderId, 
+            content, 
+            chatId: alternativeChat._id,
+            tempId
+          });
+          
+          try {
+            await newMessage.save();
+            console.log(`Created new message ${newMessage._id} in alternative chat`);
+          } catch (err) {
+            console.error("Error saving message in alternative chat:", err);
+            return res.status(500).json({
+              message: 'Error saving message in alternative chat',
+              code: 'DB_ERROR',
+              details: err.message
+            });
+          }
+          
+          // Update the chat's messages array
+          try {
+            alternativeChat.messages.push(newMessage._id);
+            alternativeChat.updatedAt = new Date();
+            await alternativeChat.save();
+            console.log(`Updated alternative chat with new message`);
+          } catch (err) {
+            console.error("Error updating alternative chat:", err);
+            // Don't fail here since the message is already saved
+          }
+          
+          // Return the message with the correct chat ID
+          return res.status(201).json({
+            ...newMessage.toObject(),
+            originalChatId: chatId,
+            newChatId: alternativeChat._id,
+            chatRestored: true
+          });
+        } else if (recipientId) {
+          // If we have a recipient ID, we can create a new chat
+          console.log(`No alternative chat found, creating new chat with recipient ${recipientId}`);
+          
+          // Verify recipient exists
+          let recipientExists;
+          try {
+            recipientExists = await User.exists({ _id: recipientId });
+            console.log(`Recipient exists: ${recipientExists ? "yes" : "no"}`);
+          } catch (err) {
+            console.error("Error checking if recipient exists:", err);
+            return res.status(500).json({
+              message: 'Error checking if recipient exists',
+              code: 'DB_ERROR',
+              details: err.message
+            });
+          }
+          
+          if (!recipientExists) {
+            return res.status(404).json({ 
+              message: 'Recipient not found',
+              code: 'RECIPIENT_NOT_FOUND'
+            });
+          }
+          
+          // Create a new chat
+          let newChat;
+          try {
+            newChat = new Chat({
+              sender: req.user._id,
+              recipient: recipientId,
+              updatedAt: new Date()
+            });
+            await newChat.save();
+            console.log(`Created new chat ${newChat._id}`);
+          } catch (err) {
+            console.error("Error creating new chat:", err);
+            return res.status(500).json({
+              message: 'Error creating new chat',
+              code: 'DB_ERROR',
+              details: err.message
+            });
+          }
+          
+          // Create the message in this new chat
+          let newMessage;
+          try {
+            newMessage = new Message({
+              sender: senderId, 
+              content, 
+              chatId: newChat._id,
+              tempId
+            });
+            await newMessage.save();
+            console.log(`Created new message ${newMessage._id} in new chat`);
+          } catch (err) {
+            console.error("Error creating message in new chat:", err);
+            return res.status(500).json({
+              message: 'Error creating message in new chat',
+              code: 'DB_ERROR',
+              details: err.message
+            });
+          }
+          
+          // Update the chat with this message
+          try {
+            newChat.messages.push(newMessage._id);
+            await newChat.save();
+            console.log(`Updated new chat with message`);
+          } catch (err) {
+            console.error("Error updating new chat with message:", err);
+            // Don't fail here since the message is already saved
+          }
+          
+          // Return success with new chat info
+          return res.status(201).json({
+            ...newMessage.toObject(),
+            originalChatId: chatId,
+            newChatId: newChat._id,
+            chatCreated: true
+          });
+        }
+      } catch (error) {
+        console.error(`Error creating alternative chat: ${error.message}`, error);
+        return res.status(500).json({
+          message: 'Error while trying to create alternative chat',
+          code: 'DB_ERROR',
+          details: error.message
+        });
+      }
+      
+      // If we get here, we couldn't recover
+      return res.status(404).json({ 
+        message: 'Chat not found and could not create a new one',
+        code: 'CHAT_NOT_FOUND'
+      });
     }
 
     // Convert IDs to strings for comparison
@@ -100,24 +293,48 @@ const sendMessage = async (req, res) => {
     const chatRecipientIdStr = chat.recipient ? chat.recipient.toString() : null;
 
     // Validate user is part of the chat
-    if (senderIdStr !== chatSenderIdStr && senderIdStr !== chatRecipientIdStr) {
-      return res.status(403).json({ message: 'You are not authorized to send messages in this chat' });
+    const isAuthorized = senderIdStr === chatSenderIdStr || senderIdStr === chatRecipientIdStr;
+    console.log(`Authorization check: user ${senderIdStr} is ${isAuthorized ? '' : 'not '}part of the chat`);
+    
+    if (!isAuthorized) {
+      return res.status(403).json({ 
+        message: 'You are not authorized to send messages in this chat',
+        code: 'UNAUTHORIZED'
+      });
     }
 
     // Create and save the new message
-    const newMessage = new Message({
-      sender: senderId, 
-      content, 
-      chatId,
-      tempId  // Store the tempId for correlation
-    });
-    await newMessage.save();
+    let newMessage;
+    try {
+      newMessage = new Message({
+        sender: senderId, 
+        content, 
+        chatId,
+        tempId  // Store the tempId for correlation
+      });
+      
+      await newMessage.save();
+      console.log(`Created new message: ${newMessage._id}`);
+    } catch (error) {
+      console.error(`Error saving message: ${error.message}`, error);
+      return res.status(500).json({ 
+        message: 'Error saving message to database',
+        code: 'DATABASE_ERROR',
+        details: error.message
+      });
+    }
 
     // Update the chat's messages array to include the new message
-    chat.messages.push(newMessage._id);
-    // Update the timestamp for sorting chats by most recent activity
-    chat.updatedAt = new Date();
-    await chat.save();
+    try {
+      chat.messages.push(newMessage._id);
+      // Update the timestamp for sorting chats by most recent activity
+      chat.updatedAt = new Date();
+      await chat.save();
+      console.log(`Updated chat with new message`);
+    } catch (error) {
+      console.error(`Error updating chat with new message: ${error.message}`, error);
+      // Don't fail the request since the message is already saved
+    }
 
     // Determine recipient - the other user in the chat
     const recipientId = senderIdStr === chatSenderIdStr
@@ -211,10 +428,17 @@ const sendMessage = async (req, res) => {
     }
 
     // Respond with the new message
-    res.status(201).json(newMessage);
+    console.log(`Successfully sent message, responding with status 201`);
+    return res.status(201).json(newMessage);
   } catch (error) {
-    console.error(`Error in sendMessage: ${error.message}`);
-    res.status(500).json({ message: 'Error sending message' });
+    console.error(`Error in sendMessage: ${error.message}`, error);
+    console.error(error.stack); // Print the full stack trace
+    
+    return res.status(500).json({ 
+      message: 'Error sending message',
+      code: 'SERVER_ERROR',
+      details: error.message
+    });
   }
 };
 

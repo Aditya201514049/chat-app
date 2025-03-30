@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSocket } from "../contexts/SocketContext";
 
-const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError }) => {
+const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError, onChatIdChanged }) => {
   const [messages, setMessages] = useState([]);
   const [messageContent, setMessageContent] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [initialFetchComplete, setInitialFetchComplete] = useState(false);
+  const [activeChat, setActiveChat] = useState(null);
   
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -20,6 +21,52 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError }) 
 
   // Add a ref to track the current chat
   const currentChatIdRef = useRef(null);
+
+  // Fetch the chat data
+  const fetchChatData = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+      
+      if (!token) {
+        setError("Authentication token not found. Please log in again.");
+        if (onAuthError) onAuthError();
+        return null;
+      }
+      
+      console.log(`Fetching chat data for: ${id}`);
+      const response = await fetch(`${API_URL}/api/chats/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (response.status === 401) {
+        console.error("Authentication error while fetching chat data");
+        if (onAuthError) onAuthError();
+        return null;
+      }
+      
+      if (!response.ok) {
+        console.error(`Error fetching chat data: ${response.status}`);
+        return null;
+      }
+      
+      const chatData = await response.json();
+      console.log("Fetched chat data:", chatData);
+      setActiveChat(chatData);
+      return chatData;
+    } catch (error) {
+      console.error("Error fetching chat data:", error);
+      return null;
+    }
+  };
+
+  // Fetch chat data when chatId changes
+  useEffect(() => {
+    if (chatId) {
+      fetchChatData(chatId);
+    }
+  }, [chatId]);
 
   const fetchMessages = async () => {
     setError("");
@@ -113,6 +160,19 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError }) 
     }
   };
 
+  // Update when activeChat changes (e.g., after fetching data)
+  useEffect(() => {
+    if (activeChat) {
+      console.log("Active chat updated:", activeChat);
+      
+      // If we're getting the information later from the Friends page selection
+      // Make sure we update the HomePage2 selectedChat state
+      if (window.updateSelectedChat && typeof window.updateSelectedChat === 'function') {
+        window.updateSelectedChat(activeChat);
+      }
+    }
+  }, [activeChat]);
+
   // Fetch messages when chat changes
   useEffect(() => {
     if (!chatId) return;
@@ -180,76 +240,79 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError }) 
       
       // Debug: log comparison values to help diagnose issues
       console.log(`Comparing message chatId: ${msgChatId} with current chatId: ${chatId}`);
+      
+      // Handle special case: message with a changed chatId (chat was recreated)
+      if (newMessage.originalChatId && newMessage.originalChatId === chatId && newMessage.newChatId) {
+        console.log(`Chat ID has changed from ${chatId} to ${newMessage.newChatId}`);
+        
+        // Update the chat ID reference
+        if (onChatIdChanged) {
+          onChatIdChanged(newMessage.newChatId);
+        } else {
+          // If no handler is provided, we can refresh the page or show a message
+          setError("Chat has been updated. Please refresh the chat list.");
+        }
+        
+        // Add message to the current display but with the new chat ID
+        setMessages((prevMessages) => {
+          // Check for duplicate message
+          const isDuplicate = prevMessages.some(
+            m => m._id === newMessage._id || 
+              (m.tempId && m.tempId === newMessage.tempId)
+          );
           
-      if (chatId !== msgChatId) {
-        console.log(`Message for different chat (${msgChatId}), current chat: ${chatId}`);
+          if (isDuplicate) {
+            console.log(`Duplicate message detected, not adding: ${newMessage._id}`);
+            return prevMessages;
+          }
+          
+          return [...prevMessages, {...newMessage, chatId: chatId}];
+        });
+        
         return;
       }
       
-      setMessages((prevMessages) => {
-        // Track if we need to add this message
-        let shouldAddMessage = true;
-        
-        // Create a new messages array to avoid modifying the previous one directly
-        let updatedMessages = [...prevMessages];
-        
-        // CASE 1: Message with same ID already exists
-        if (newMessage._id) {
-          const messageWithSameId = prevMessages.find(m => m._id === newMessage._id);
-          if (messageWithSameId) {
-            console.log(`Message with ID ${newMessage._id} already exists, ignoring`);
-            return prevMessages; // No changes needed
-          }
-        }
-        
-        // CASE 2: This is a real message replacing a temp message
-        if (newMessage.tempId) {
-          // Loop through to find and replace temp message
-          let tempFound = false;
-          updatedMessages = prevMessages.map(msg => {
-            if (msg._id === newMessage.tempId || 
-                (msg.tempMessage && msg.content === newMessage.content && msg.sender === newMessage.sender)) {
-              console.log(`Replacing temp message with real message ${newMessage._id}`);
-              tempFound = true;
-              return { 
-                ...newMessage, 
-                sender: msg.sender, 
-                pending: false 
-              };
-            }
-            return msg;
-          });
+      // Normal case: message for current chat
+      if (chatId === msgChatId) {
+        setMessages((prevMessages) => {
+          // Track if we need to add this message
+          let shouldAddMessage = true;
           
-          // If we found and replaced a temp message, return the updated array
-          if (tempFound) {
-            return updatedMessages;
+          // Create a new messages array to avoid modifying the previous one directly
+          let updatedMessages = [...prevMessages];
+          
+          // CASE 1: Message with same ID already exists
+          if (newMessage._id) {
+            const messageWithSameId = prevMessages.find(m => m._id === newMessage._id);
+            if (messageWithSameId) {
+              console.log(`Message with ID ${newMessage._id} already exists, ignoring`);
+              return prevMessages;
+            }
           }
-        }
-        
-        // CASE 3: Check for duplicate content with same timestamp (within 3 seconds)
-        const isDuplicate = prevMessages.some(msg => {
-          if (msg.content === newMessage.content && msg.sender === newMessage.sender) {
-            const msgTime = new Date(msg.createdAt || msg.timestamp || Date.now()).getTime();
-            const newMsgTime = new Date(newMessage.createdAt || newMessage.timestamp || Date.now()).getTime();
-            const timeDiff = Math.abs(msgTime - newMsgTime);
-            console.log(`Time difference between similar messages: ${timeDiff}ms`);
-            return timeDiff < 3000;
+          
+          // CASE 2: Message with matching tempId (replacing a pending message)
+          if (newMessage.tempId) {
+            const indexOfTempMessage = prevMessages.findIndex(m => m._id === newMessage.tempId);
+            if (indexOfTempMessage >= 0) {
+              console.log(`Replacing temp message ${newMessage.tempId} with server message ${newMessage._id}`);
+              // Replace the temporary message with the real one
+              updatedMessages[indexOfTempMessage] = {
+                ...newMessage,
+                pending: false
+              };
+              shouldAddMessage = false;
+            }
           }
-          return false;
+          
+          // Add the message if it's not a duplicate or replacing a temp message
+          if (shouldAddMessage) {
+            console.log(`Adding new message ${newMessage._id || 'without ID'} to UI`);
+            updatedMessages.push(newMessage);
+          }
+          
+          return updatedMessages;
         });
-        
-        if (isDuplicate) {
-          console.log("Duplicate message detected, ignoring");
-          return prevMessages;
-        }
-        
-        // CASE 4: This is a completely new message, add it
-        console.log("Adding new message:", newMessage.content);
-        return [...prevMessages, { ...newMessage, pending: false }];
-      });
-      
-      // Clear typing indicator
-      setIsTyping(false);
+      }
     };
     
     // Listen for typing indicators
@@ -333,9 +396,186 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError }) 
     // Clear the input field right away for better UX
     setMessageContent("");
 
+    // Function to actually send the message - separated for retry functionality
+    const sendMessageRequest = async () => {
+      try {
+        // Send message via HTTP
+        console.log("Sending message via HTTP endpoint");
+        
+        // If we have chat data, include the recipient ID to help with recovery
+        const recipientId = activeChat?.otherUser?._id;
+        
+        // Create a more detailed request body with fallback information
+        const requestBody = { 
+          chatId, 
+          content: messageToBeSent,
+          tempId // Include tempId for correlation
+        };
+        
+        // Only add recipientId if we have it
+        if (recipientId) {
+          requestBody.recipientId = recipientId;
+        }
+        
+        console.log("Sending message with payload:", requestBody);
+        
+        const response = await fetch(`${API_URL}/api/chats/message`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        // Handle auth errors
+        if (response.status === 401) {
+          const errorData = await response.json();
+          console.log("Auth error when sending message:", errorData);
+          
+          // Mark the temporary message as failed with retry option
+          setMessages(prevMessages => 
+            prevMessages.map(msg => 
+              msg._id === tempId ? 
+              { ...msg, failed: true, pending: false, canRetry: true, error: "Authentication failed" } : 
+              msg
+            )
+          );
+          
+          // Show appropriate error
+          if (errorData.code === 'USER_NOT_FOUND') {
+            setError("Your account appears to have been deleted. Please register again.");
+          } else if (errorData.code === 'TOKEN_EXPIRED') {
+            setError("Your session has expired. Please log in again.");
+          } else {
+            setError("Authentication failed. Please log in again.");
+          }
+          
+          // Clear stored credentials
+          localStorage.removeItem("token");
+          localStorage.removeItem("userId");
+          
+          if (onAuthError) onAuthError();
+          return false;
+        }
+
+        // Handle chat not found error
+        if (response.status === 404) {
+          const errorData = await response.json();
+          console.log("Chat not found when sending message:", errorData);
+          
+          // Mark the temporary message as failed with retry option
+          setMessages(prevMessages => 
+            prevMessages.map(msg => 
+              msg._id === tempId ? 
+              { ...msg, failed: true, pending: false, canRetry: true, error: "Chat not found" } : 
+              msg
+            )
+          );
+          
+          setError("This chat no longer exists. Please refresh the page.");
+          return false;
+        }
+
+        if (!response.ok) {
+          throw new Error("Failed to send message");
+        }
+
+        const newMessage = await response.json();
+        console.log("Message sent successfully, server returned:", newMessage._id);
+        
+        // Check if socket already handled replacing the temp message
+        setMessages(prevMessages => {
+          // If the temp message is still there (socket hasn't replaced it),
+          // replace it with the real message now
+          const tempMessageExists = prevMessages.some(m => m._id === tempId);
+          const newMessageExists = prevMessages.some(m => m._id === newMessage._id);
+          
+          if (tempMessageExists && !newMessageExists) {
+            console.log("HTTP response: Replacing temp message with real message");
+            return prevMessages.map(msg => 
+              msg._id === tempId ? 
+              { ...newMessage, sender: userId, pending: false } : 
+              msg
+            );
+          }
+          
+          return prevMessages;
+        });
+        
+        return true;
+      } catch (error) {
+        console.error("Error sending message:", error);
+        
+        // Mark the temporary message as failed with retry option
+        setMessages(prevMessages => 
+          prevMessages.map(msg => 
+            msg._id === tempId ? 
+            { ...msg, failed: true, pending: false, canRetry: true, error: "Network error" } : 
+            msg
+          )
+        );
+        
+        setError("Failed to send message. Please check your connection and try again.");
+        return false;
+      }
+    };
+
+    // Try to send the message
+    sendMessageRequest();
+  };
+  
+  // Function to retry sending a failed message
+  const handleRetryMessage = async (failedMessage) => {
+    if (!failedMessage || !failedMessage.content) return;
+    
+    // Mark message as pending again
+    setMessages(prevMessages => 
+      prevMessages.map(msg => 
+        msg._id === failedMessage._id ? 
+        { ...msg, pending: true, failed: false, canRetry: false, error: null } : 
+        msg
+      )
+    );
+    
+    // Clear any previous error
+    setError("");
+    
+    // Check authentication before proceeding
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setError("Authentication token not found. Please log in again.");
+      
+      // Mark the message as failed again
+      setMessages(prevMessages => 
+        prevMessages.map(msg => 
+          msg._id === failedMessage._id ? 
+          { ...msg, failed: true, pending: false, canRetry: true, error: "Authentication required" } : 
+          msg
+        )
+      );
+      
+      if (onAuthError) onAuthError();
+      return;
+    }
+    
     try {
       // Send message via HTTP
-      console.log("Sending message via HTTP endpoint");
+      console.log("Retrying message via HTTP endpoint");
+      
+      // Create a more detailed request body with fallback information
+      const requestBody = { 
+        chatId, 
+        content: failedMessage.content,
+        tempId: failedMessage._id // Use the same tempId for correlation
+      };
+      
+      // Only add recipientId if we have it
+      if (activeChat?.otherUser?._id) {
+        requestBody.recipientId = activeChat.otherUser._id;
+      }
+      
+      console.log("Retrying with payload:", requestBody);
       
       const response = await fetch(`${API_URL}/api/chats/message`, {
         method: "POST",
@@ -343,84 +583,54 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError }) 
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ 
-          chatId, 
-          content: messageToBeSent,
-          tempId // Include tempId for correlation
-        }),
+        body: JSON.stringify(requestBody),
       });
-
-      // Handle auth errors
-      if (response.status === 401) {
-        const errorData = await response.json();
-        console.log("Auth error when sending message:", errorData);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Failed to retry message. Status: ${response.status}, Error: ${errorText}`);
         
-        // Mark the temporary message as failed
+        // Mark the message as failed again
         setMessages(prevMessages => 
           prevMessages.map(msg => 
-            msg._id === tempId ? 
-            { ...msg, failed: true, pending: false } : 
+            msg._id === failedMessage._id ? 
+            { ...msg, failed: true, pending: false, canRetry: true, error: `Server error (${response.status})` } : 
             msg
           )
         );
         
-        // Show appropriate error
-        if (errorData.code === 'USER_NOT_FOUND') {
-          setError("Your account appears to have been deleted. Please register again.");
-        } else if (errorData.code === 'TOKEN_EXPIRED') {
-          setError("Your session has expired. Please log in again.");
-        } else {
-          setError("Authentication failed. Please log in again.");
-        }
-        
-        // Clear stored credentials
-        localStorage.removeItem("token");
-        localStorage.removeItem("userId");
-        
-        if (onAuthError) onAuthError();
+        setError(`Failed to send message. Server returned: ${response.status}`);
         return;
       }
-
-      if (!response.ok) {
-        throw new Error("Failed to send message");
-      }
-
+      
       const newMessage = await response.json();
-      console.log("Message sent successfully, server returned:", newMessage._id);
+      console.log("Message retry successful, server returned:", newMessage._id);
       
-      // Check if socket already handled replacing the temp message
-      setMessages(prevMessages => {
-        // If the temp message is still there (socket hasn't replaced it),
-        // replace it with the real message now
-        const tempMessageExists = prevMessages.some(m => m._id === tempId);
-        const newMessageExists = prevMessages.some(m => m._id === newMessage._id);
-        
-        if (tempMessageExists && !newMessageExists) {
-          console.log("HTTP response: Replacing temp message with real message");
-          return prevMessages.map(msg => 
-            msg._id === tempId ? 
-            { ...newMessage, sender: userId, pending: false } : 
-            msg
-          );
-        }
-        
-        return prevMessages;
-      });
-    } catch (error) {
-      console.error("Error sending message:", error);
-      setError("Failed to send message. Please try again.");
-      
-      // Mark the temporary message as failed
+      // Replace the failed message with the successful one
       setMessages(prevMessages => 
         prevMessages.map(msg => 
-          msg._id === tempId ? 
-          { ...msg, failed: true, pending: false } : 
+          msg._id === failedMessage._id ? 
+          { ...newMessage, sender: userId, pending: false } : 
           msg
         )
       );
+      
+    } catch (error) {
+      console.error("Error retrying message:", error);
+      
+      // Mark the message as failed again
+      setMessages(prevMessages => 
+        prevMessages.map(msg => 
+          msg._id === failedMessage._id ? 
+          { ...msg, failed: true, pending: false, canRetry: true, error: "Network error" } : 
+          msg
+        )
+      );
+      
+      setError("Failed to send message. Please check your connection and try again.");
     }
   };
-  
+
   // Handle typing indicator
   const handleTyping = (e) => {
     // Only trigger typing events if the input changes (not for backspace when empty, etc.)
@@ -486,152 +696,159 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError }) 
                 onClick={onBack}
                 className="md:hidden p-1 rounded-full hover:bg-gray-200"
               >
-                <svg 
-                  className="w-5 h-5" 
-                  width="20" 
-                  height="20" 
-                  fill="currentColor" 
-                  viewBox="0 0 20 20"
+                <svg
                   xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 text-gray-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
                   <path
-                    fillRule="evenodd"
-                    d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                    clipRule="evenodd"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
                   />
                 </svg>
               </button>
-              <div className={`flex items-center justify-center w-8 h-8 rounded-full text-blue-500 ${chatName === 'Deleted User' ? 'bg-gray-200' : 'bg-blue-100'}`}>
-                <span className="text-sm font-bold">{chatName?.charAt(0)?.toUpperCase()}</span>
-              </div>
               <div className="flex items-center">
-                <h2 className="text-sm font-medium text-gray-900">{chatName}</h2>
-                {chatName === 'Deleted User' && (
-                  <span className="ml-2 px-1.5 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
-                    Deleted
+                <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-500">
+                  <span className="font-semibold">
+                    {chatName?.charAt(0)?.toUpperCase() || "?"}
                   </span>
-                )}
+                </div>
+                <div className="ml-3">
+                  <h2 className="text-lg font-semibold text-gray-800 max-w-[150px] truncate">
+                    {chatName || "Chat"}
+                  </h2>
+                  {isConnected ? (
+                    <p className="text-xs text-green-600">Connected</p>
+                  ) : (
+                    <p className="text-xs text-red-500">Disconnected</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Messages section */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-            {error && (
-              <div className="bg-red-100 text-red-800 p-3 rounded-md text-sm mb-4">
-                {error}
-              </div>
-            )}
-
+          <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
             {loading && messages.length === 0 ? (
               <div className="flex justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mt-6"></div>
               </div>
             ) : (
               <>
-                {messages.length > 0 ? (
-                  messages.map((message, index) => (
+                {/* Show loading indicator for older messages at the top */}
+                {loading && messages.length > 0 && (
+                  <div className="flex justify-center mb-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                  </div>
+                )}
+                {error && (
+                  <div className="bg-red-100 text-red-800 p-3 rounded-md text-sm mb-4">
+                    {error}
+                  </div>
+                )}
+                {messages
+                  .filter((msg) => msg.chatId === chatId)
+                  .map((message, index) => (
                     <div
                       key={message._id || index}
-                      className={`flex ${
-                        message.sender === userId ? "justify-end" : "justify-start"
-                      } mb-2`}
+                      className={`flex mb-3 ${
+                        message.sender === userId
+                          ? "justify-end"
+                          : "justify-start"
+                      }`}
                     >
                       <div
-                        className={`max-w-xs md:max-w-md lg:max-w-lg px-4 py-2 rounded-lg ${
+                        className={`rounded-lg px-4 py-2 max-w-[80%] break-words relative ${
                           message.sender === userId
-                            ? `bg-blue-${message.failed ? "100" : "600"} ${message.failed ? "text-red-500" : "text-white"} rounded-br-none`
-                            : "bg-gray-200 text-gray-800 rounded-bl-none"
-                        } ${message.pending ? "opacity-70" : ""}`}
+                            ? "bg-blue-500 text-white"
+                            : "bg-white text-gray-800 border border-gray-200"
+                        } ${message.pending ? "opacity-60" : ""}`}
                       >
-                        <p className="break-words">{message.content}</p>
-                        {message.pending && (
-                          <div className="flex justify-end mt-1">
-                            <div className="w-3 h-3 rounded-full border-2 border-t-transparent border-white animate-spin"></div>
-                          </div>
-                        )}
-                        {message.failed && (
-                          <div className="flex justify-end mt-1">
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Create a retry function here
-                                // You can copy the send logic and apply it to this specific message
-                              }}
-                              className="text-xs text-red-500 hover:underline"
-                            >
-                              Failed - Retry
-                            </button>
-                          </div>
-                        )}
+                        {message.content}
+                        
+                        {/* Show message status indicators */}
+                        <div className="text-right">
+                          {message.pending && (
+                            <span className="text-xs opacity-75">
+                              Sending...
+                            </span>
+                          )}
+                          {message.failed && (
+                            <div className="flex flex-col items-end">
+                              <span className="text-xs text-red-300 mt-1">
+                                {message.error || "Failed to send"}
+                              </span>
+                              {message.canRetry && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRetryMessage(message);
+                                  }}
+                                  className="text-xs text-red-300 hover:text-red-100 hover:underline mt-1"
+                                >
+                                  Retry
+                                </button>
+                              )}
+                            </div>
+                          )}
+                          {!message.pending && !message.failed && (
+                            <span className="text-xs opacity-75">
+                              {new Date(message.createdAt).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-6">
-                    <p className="text-gray-500 text-sm">No messages yet</p>
-                  </div>
-                )}
-                
-                {/* Typing indicator */}
-                {isTyping && (
-                  <div className="flex justify-start">
-                    <div className="bg-gray-200 text-gray-500 px-4 py-2 rounded-lg rounded-bl-none">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce"></div>
-                        <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce" style={{ animationDelay: "0.2s" }}></div>
-                        <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce" style={{ animationDelay: "0.4s" }}></div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Loading more indicator at the top when fetching older messages */}
-                {loading && messages.length > 0 && (
-                  <div className="flex justify-center py-2">
-                    <div className="w-5 h-5 border-t-2 border-blue-500 rounded-full animate-spin"></div>
-                  </div>
-                )}
-                
+                  ))}
                 <div ref={messagesEndRef} />
               </>
             )}
           </div>
 
-          {/* Message input */}
-          <div className="border-t px-4 py-3 bg-white">
-            <form onSubmit={handleSendMessage} className="flex space-x-2">
+          {/* Typing indicator */}
+          {isTyping && (
+            <div className="px-4 py-2 text-gray-500 text-xs italic">
+              Someone is typing...
+            </div>
+          )}
+
+          {/* Message input form */}
+          <form onSubmit={handleSendMessage} className="p-3 bg-white border-t">
+            <div className="flex items-center">
               <input
                 type="text"
-                placeholder="Type a message..."
-                className="flex-1 py-2 px-3 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300"
                 value={messageContent}
                 onChange={handleTyping}
+                placeholder="Type a message..."
+                className="flex-1 py-2 px-3 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               />
               <button
                 type="submit"
                 disabled={!messageContent.trim()}
-                className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:opacity-50"
+                className={`px-4 py-2 rounded-r-md ${
+                  messageContent.trim()
+                    ? "bg-blue-500 text-white hover:bg-blue-600"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
               >
                 <svg
-                  className="w-5 h-5"
-                  width="24"
-                  height="24"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
                   xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                  ></path>
+                  <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
                 </svg>
               </button>
-            </form>
-          </div>
+            </div>
+          </form>
         </>
       )}
     </div>

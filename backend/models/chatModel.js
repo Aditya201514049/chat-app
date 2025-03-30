@@ -23,6 +23,16 @@ const chatSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  }
+});
+
+// Update the updatedAt field on every save
+chatSchema.pre('save', function(next) {
+  this.updatedAt = new Date();
+  next();
 });
 
 const Chat = mongoose.model('Chat', chatSchema);
