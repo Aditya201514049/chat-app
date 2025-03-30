@@ -10,6 +10,31 @@ import ProfilePage from "./pages/ProfilePage";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { SocketProvider } from "./contexts/SocketContext";
 
+// Protected route for authenticated users only
+const ProtectedRoute = ({ children }) => {
+  const isAuthenticated = localStorage.getItem("token");
+  const location = useLocation();
+  
+  if (!isAuthenticated) {
+    // Redirect to login page, but save the location they were trying to access
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+  
+  return children;
+};
+
+// Route that's only accessible to non-authenticated users
+const PublicOnlyRoute = ({ children }) => {
+  const isAuthenticated = localStorage.getItem("token");
+  
+  if (isAuthenticated) {
+    // If user is already logged in, redirect to home
+    return <Navigate to="/home" replace />;
+  }
+  
+  return children;
+};
+
 // Wrapper component that uses location
 const AppContent = () => {
   const location = useLocation();
@@ -27,12 +52,69 @@ const AppContent = () => {
       {/* Main content with conditional padding */}
       <div className={`flex-1 ${isChatPage(location.pathname) ? "mt-16" : "mt-20"}`}>
         <Routes>
-          <Route path="/login" element={<LoginForm />} />
-          <Route path="/register" element={<RegisterForm />} />
-          <Route path="/friends" element={<FriendsPage />} />
-          <Route path="/home" element={<HomePage2 />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/" element={isAuthenticated ? <HomePage2 /> : <RegisterForm />} />
+          {/* Public routes (only accessible when logged out) */}
+          <Route 
+            path="/login" 
+            element={
+              <PublicOnlyRoute>
+                <LoginForm />
+              </PublicOnlyRoute>
+            } 
+          />
+          <Route 
+            path="/register" 
+            element={
+              <PublicOnlyRoute>
+                <RegisterForm />
+              </PublicOnlyRoute>
+            } 
+          />
+          
+          {/* Protected routes (only accessible when logged in) */}
+          <Route 
+            path="/friends" 
+            element={
+              <ProtectedRoute>
+                <FriendsPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/home" 
+            element={
+              <ProtectedRoute>
+                <HomePage2 />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* Root path - redirects based on auth status */}
+          <Route 
+            path="/" 
+            element={
+              isAuthenticated ? 
+              <Navigate to="/home" replace /> : 
+              <Navigate to="/register" replace />
+            } 
+          />
+          
+          {/* Catch-all route for 404 */}
+          <Route 
+            path="*" 
+            element={
+              isAuthenticated ? 
+              <Navigate to="/home" replace /> : 
+              <Navigate to="/login" replace />
+            } 
+          />
         </Routes>
       </div>
 

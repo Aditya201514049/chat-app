@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../contexts/ThemeContext";
 
 // Store the API URL in a variable at the top
@@ -8,6 +8,11 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const LoginForm = () => {
   const { theme } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get the page they were trying to access before being redirected to login
+  const from = location.state?.from?.pathname || "/home";
+  
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -39,7 +44,9 @@ const LoginForm = () => {
         localStorage.setItem("token", data.token);
         localStorage.setItem("userId", data._id);
         setFormData({ email: "", password: "" });
-        navigate("/home");
+        
+        // Redirect them back to the page they were trying to access
+        navigate(from, { replace: true });
       } else {
         setError(data.message || "Invalid email or password");
       }
