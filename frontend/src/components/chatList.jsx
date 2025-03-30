@@ -94,15 +94,40 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
     fetchChatRooms();
     
     // Initialize unread counts from localStorage if available
-    const savedUnreadCounts = localStorage.getItem('unreadCounts');
-    if (savedUnreadCounts) {
-      try {
-        setUnreadCounts(JSON.parse(savedUnreadCounts));
-      } catch (e) {
-        console.error("Error parsing saved unread counts:", e);
-        // Reset if there's an error
+    try {
+      const savedUnreadCounts = localStorage.getItem('unreadCounts');
+      console.log("Loading saved unread counts:", savedUnreadCounts);
+      
+      if (savedUnreadCounts) {
+        const parsedCounts = JSON.parse(savedUnreadCounts);
+        console.log("Parsed unread counts:", parsedCounts);
+        setUnreadCounts(parsedCounts);
+      } else {
+        console.log("No saved unread counts found");
         localStorage.setItem('unreadCounts', JSON.stringify({}));
       }
+      
+      // Initialize processed message IDs from localStorage
+      let processedIds = [];
+      try {
+        const savedProcessedIds = localStorage.getItem('processedMessageIds');
+        if (savedProcessedIds) {
+          processedIds = JSON.parse(savedProcessedIds);
+        }
+      } catch (e) {
+        console.error("Error parsing saved processed message IDs:", e);
+      }
+      
+      // If processedIds doesn't exist or isn't an array, reset it
+      if (!Array.isArray(processedIds)) {
+        processedIds = [];
+        localStorage.setItem('processedMessageIds', JSON.stringify(processedIds));
+      }
+    } catch (e) {
+      console.error("Error initializing unread counts:", e);
+      // Reset if there's an error
+      localStorage.setItem('unreadCounts', JSON.stringify({}));
+      localStorage.setItem('processedMessageIds', JSON.stringify([]));
     }
   }, []);
   
@@ -114,9 +139,19 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
   // Reset unread count when a chat is selected
   useEffect(() => {
     if (selectedChatId) {
+      console.log(`selectedChatId changed to ${selectedChatId}, clearing unread count`);
+      
       setUnreadCounts(prev => {
+        if (!prev[selectedChatId]) {
+          return prev; // No change needed
+        }
+        
         const newCounts = { ...prev };
         delete newCounts[selectedChatId];
+        
+        // Save to localStorage
+        localStorage.setItem('unreadCounts', JSON.stringify(newCounts));
+        
         return newCounts;
       });
     }
@@ -213,12 +248,30 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
         ? message.chatId._id.toString() 
         : message.chatId.toString();
       
+      console.log(`Processing message for chat ${chatId}, current user: ${userId}, selected chat: ${selectedChatId}`);
+      
       // Increment unread count if this message is from another user and not the selected chat
       if (message.sender !== userId && chatId !== selectedChatId) {
+        console.log(`Message from another user (${message.sender}) and not in selected chat (${selectedChatId})`);
+        
         // Check if we've already processed this message ID to prevent double counting
-        const processedMessageIds = JSON.parse(localStorage.getItem('processedMessageIds') || '[]');
+        let processedMessageIds = [];
+        try {
+          const savedIds = localStorage.getItem('processedMessageIds');
+          processedMessageIds = savedIds ? JSON.parse(savedIds) : [];
+          if (!Array.isArray(processedMessageIds)) {
+            processedMessageIds = [];
+          }
+        } catch (e) {
+          console.error("Error parsing processed message IDs:", e);
+          processedMessageIds = [];
+        }
+        
+        console.log("Current processed message IDs:", processedMessageIds);
         
         if (message._id && !processedMessageIds.includes(message._id)) {
+          console.log(`New message ${message._id} - incrementing counter`);
+          
           // Add this message to processed list
           processedMessageIds.push(message._id);
           // Keep only the last 100 messages to prevent the list from growing too large
@@ -228,23 +281,39 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
           localStorage.setItem('processedMessageIds', JSON.stringify(processedMessageIds));
           
           // Increment the counter
-          setUnreadCounts(prev => ({
-            ...prev,
-            [chatId]: (prev[chatId] || 0) + 1
-          }));
-          
-          console.log(`Incremented unread count for chat ${chatId} to ${(unreadCounts[chatId] || 0) + 1}`);
+          setUnreadCounts(prev => {
+            const newCounts = {
+              ...prev,
+              [chatId]: (prev[chatId] || 0) + 1
+            };
+            
+            console.log(`Updated unread counts:`, newCounts);
+            // Save to localStorage
+            localStorage.setItem('unreadCounts', JSON.stringify(newCounts));
+            
+            return newCounts;
+          });
         } else if (!message._id) {
-          // If message has no ID (rare case), we still count it but can't track it
-          setUnreadCounts(prev => ({
-            ...prev,
-            [chatId]: (prev[chatId] || 0) + 1
-          }));
+          console.log(`Message has no ID - still incrementing counter`);
           
-          console.log(`Incremented unread count for chat ${chatId} to ${(unreadCounts[chatId] || 0) + 1} (message has no ID)`);
+          // If message has no ID (rare case), we still count it but can't track it
+          setUnreadCounts(prev => {
+            const newCounts = {
+              ...prev,
+              [chatId]: (prev[chatId] || 0) + 1
+            };
+            
+            console.log(`Updated unread counts:`, newCounts);
+            // Save to localStorage
+            localStorage.setItem('unreadCounts', JSON.stringify(newCounts));
+            
+            return newCounts;
+          });
         } else {
-          console.log(`Skipping already counted message: ${message._id}`);
+          console.log(`Already processed message ${message._id} - skipping`);
         }
+      } else {
+        console.log(`Message is either from current user (${userId === message.sender}) or in selected chat (${chatId === selectedChatId}) - not incrementing counter`);
       }
       
       // Find the chat this message belongs to and move it to the top
@@ -297,12 +366,22 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
   const handleChatSelect = (room) => {
     const chatId = getChatUniqueId(room);
     
-    // Clear unread count for this chat
-    setUnreadCounts(prev => {
-      const newCounts = { ...prev };
-      delete newCounts[chatId];
-      return newCounts;
-    });
+    console.log(`Selecting chat ${chatId}, current unread counts:`, unreadCounts);
+    
+    if (unreadCounts[chatId]) {
+      console.log(`Clearing unread count for chat ${chatId}`);
+      
+      // Clear unread count for this chat
+      setUnreadCounts(prev => {
+        const newCounts = { ...prev };
+        delete newCounts[chatId];
+        
+        // Save to localStorage
+        localStorage.setItem('unreadCounts', JSON.stringify(newCounts));
+        
+        return newCounts;
+      });
+    }
     
     onChatSelect(room);
   };
