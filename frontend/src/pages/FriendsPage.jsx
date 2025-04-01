@@ -196,19 +196,14 @@ const FriendsPage = () => {
   );
 
   return (
-    <div className="container mx-auto px-4 py-8 mt-16">
-      <div className="mb-8 text-center bg-gradient-to-r from-primary/10 to-secondary/10 py-6 rounded-lg">
-        <h1 className="text-3xl font-bold mb-2 text-base-content">Find Friends</h1>
-        <p className="text-base-content/70">Connect with people and start chatting</p>
-      </div>
-      
+    <div className="container mx-auto px-4 py-4 mt-0">
       {/* Search input */}
-      <div className="form-control max-w-md mx-auto mb-8">
-        <div className="input-group">
+      <div className="form-control w-full mx-auto mb-8">
+        <div className="flex items-center w-full max-w-4xl mx-auto gap-2">
           <input
             type="text"
             placeholder="Search people..."
-            className="input input-bordered flex-grow focus:outline-primary"
+            className="input input-bordered w-full focus:outline-primary"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
