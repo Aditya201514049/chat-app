@@ -96,6 +96,16 @@ const Navbar = () => {
     default: "text-primary-content hover:bg-primary-focus/30"
   };
 
+  // Toggle mobile menu
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(prevState => !prevState);
+  };
+
+  // Toggle profile dropdown
+  const toggleProfileDropdown = () => {
+    setIsDropdownOpen(prevState => !prevState);
+  };
+
   if (loading) {
     return (
       <div className="navbar bg-gradient-to-r from-primary/90 to-primary fixed top-0 left-0 w-full z-50 shadow-md">
@@ -118,14 +128,21 @@ const Navbar = () => {
             role="button" 
             className="btn btn-ghost text-primary-content lg:hidden"
             data-mobile-toggle="true"
+            onClick={toggleMobileMenu}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h8m-8 6h16" />
-            </svg>
+            {isMobileMenuOpen ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h8m-8 6h16" />
+              </svg>
+            )}
           </div>
           <ul 
             tabIndex={0} 
-            className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52"
+            className={`menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52 ${isMobileMenuOpen ? 'block' : 'hidden'}`}
             ref={mobileDropdownRef}
           >
             {token ? (
@@ -234,12 +251,17 @@ const Navbar = () => {
           </div>
         ) : (
           <div className="dropdown dropdown-end ml-2" ref={desktopDropdownRef}>
-            <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar placeholder">
+            <div 
+              tabIndex={0} 
+              role="button" 
+              className="btn btn-ghost btn-circle avatar placeholder"
+              onClick={toggleProfileDropdown}
+            >
               <div className="bg-white text-primary rounded-full w-10">
                 <span>{userName.charAt(0).toUpperCase()}</span>
               </div>
             </div>
-            <ul tabIndex={0} className="menu dropdown-content menu-sm z-[1] p-2 shadow bg-base-100 rounded-box w-52 mt-4">
+            <ul tabIndex={0} className={`menu dropdown-content menu-sm z-[1] p-2 shadow bg-base-100 rounded-box w-52 mt-4 ${isDropdownOpen ? 'block' : 'hidden'}`}>
               <li className="p-2 border-b border-base-200">
                 <div className="font-bold">{userName}</div>
                 <div className="text-xs opacity-60">{userEmail}</div>
