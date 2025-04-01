@@ -24,6 +24,8 @@
   --color-bg-footer: #f3f4f6;
   --color-bg-error: #fee2e2; /* Light red background for errors */
   --color-bg-error-light: #fef2f2; /* Very light red for error indicators */
+  --color-bg-auth-tab-active: #ffffff; /* Active auth tab background */
+  --color-bg-auth-tab-inactive: transparent; /* Inactive auth tab background */
   
   /* Text colors */
   --color-text-primary: #111827;
@@ -36,6 +38,8 @@
   --color-text-placeholder: #9ca3af;
   --color-text-error: #ef4444;
   --color-text-success: #10b981;
+  --color-text-auth-tab-active: #3b82f6; /* Active auth tab text */
+  --color-text-auth-tab-inactive: #ffffff; /* Inactive auth tab text */
   
   /* Border colors */
   --color-border-light: #e5e7eb;
@@ -78,6 +82,8 @@
   --color-bg-footer: #2a2a2a;        /* Footer background */
   --color-bg-error: #7f1d1d;         /* Dark red background for errors */
   --color-bg-error-light: #450a0a;   /* Darker red for error indicators */
+  --color-bg-auth-tab-active: #ffffff; /* Active auth tab background */
+  --color-bg-auth-tab-inactive: transparent; /* Inactive auth tab background */
   
   /* Text colors */
   --color-text-primary: #e6e6e6;     /* Light gray text for main content */
@@ -90,6 +96,8 @@
   --color-text-placeholder: #909090; /* Medium gray for placeholder text */
   --color-text-error: #f87171;       /* Light red for errors */
   --color-text-success: #34d399;     /* Light green for success */
+  --color-text-auth-tab-active: #3b82f6; /* Active auth tab text */
+  --color-text-auth-tab-inactive: #ffffff; /* Inactive auth tab text */
   
   /* Border colors */
   --color-border-light: #4a4a4a;     /* Light border */

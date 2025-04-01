@@ -225,28 +225,28 @@ const Navbar = () => {
         {token ? (
           <ul className="menu menu-horizontal px-1">
             <li className="mx-1">
-                    <Link
-                      to="/home"
-                      style={{ 
-                  backgroundColor: isActive('/home') ? 'white' : 'transparent',
-                  color: isActive('/home') ? '#6366f1' : 'white'
-                      }}
+              <Link
+                to="/home"
+                style={{ 
+                  backgroundColor: isActive('/home') ? 'rgba(255, 255, 255, 0.9)' : 'transparent',
+                  color: isActive('/home') ? 'var(--color-button-primary)' : 'var(--color-text-navbar)'
+                }}
                 className="font-medium hover:bg-primary-focus/30"
-                    >
-                      Home
-                    </Link>
+              >
+                Home
+              </Link>
             </li>
             <li className="mx-1">
-                    <Link
-                      to="/friends"
-                      style={{ 
-                  backgroundColor: isActive('/friends') ? 'white' : 'transparent',
-                  color: isActive('/friends') ? '#6366f1' : 'white'
-                      }}
+              <Link
+                to="/friends"
+                style={{ 
+                  backgroundColor: isActive('/friends') ? 'rgba(255, 255, 255, 0.9)' : 'transparent',
+                  color: isActive('/friends') ? 'var(--color-button-primary)' : 'var(--color-text-navbar)'
+                }}
                 className="font-medium hover:bg-primary-focus/30"
-                    >
-                      Friends
-                    </Link>
+              >
+                Friends
+              </Link>
             </li>
           </ul>
         ) : null}
@@ -257,10 +257,24 @@ const Navbar = () => {
         
         {!token ? (
           <div className="flex items-center gap-2 ml-2">
-            <Link to="/login" className="btn btn-sm btn-ghost text-primary-content hover:bg-primary-focus/50">
+            <Link 
+              to="/login" 
+              className="btn btn-sm btn-ghost hover:bg-primary-focus/50"
+              style={{ 
+                color: 'var(--color-text-navbar)',
+                backgroundColor: isActive('/login') ? 'rgba(255, 255, 255, 0.2)' : 'transparent'
+              }}
+            >
               Login
             </Link>
-            <Link to="/register" className="btn btn-sm text-primary hover:bg-base-200" style={{ backgroundColor: 'var(--color-bg-elevated)' }}>
+            <Link 
+              to="/register" 
+              className="btn btn-sm" 
+              style={{ 
+                backgroundColor: isActive('/register') ? 'rgba(255, 255, 255, 0.9)' : 'var(--color-bg-elevated)',
+                color: isActive('/register') ? 'var(--color-button-primary)' : 'var(--color-text-primary)'
+              }}
+            >
               Register
             </Link>
           </div>
