@@ -7,6 +7,13 @@ import Footer from "./components/Footer";
 import FriendsPage from "./pages/FriendsPage";
 import HomePage2 from "./pages/HomePage2";
 import ProfilePage from "./pages/ProfilePage";
+import AboutPage from "./pages/AboutPage";
+import FAQPage from "./pages/FAQPage";
+import ContactPage from "./pages/ContactPage";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import HelpPage from "./pages/HelpPage";
+import FeedbackPage from "./pages/FeedbackPage";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { SocketProvider } from "./contexts/SocketContext";
 
@@ -95,6 +102,15 @@ const AppContent = () => {
               </ProtectedRoute>
             } 
           />
+          
+          {/* Public information pages */}
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/help" element={<HelpPage />} />
+          <Route path="/feedback" element={<FeedbackPage />} />
           
           {/* Root path - redirects based on auth status */}
           <Route 
