@@ -283,17 +283,17 @@ const FriendsPage = () => {
                   <div className="card-body">
                     <div className="flex items-center gap-4">
                       <div className="avatar placeholder">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary text-primary-content flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center" style={{ color: "white" }}>
                           <span className="text-lg font-bold">
                             {user.name.charAt(0).toUpperCase()}
                           </span>
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-base font-medium truncate text-base-content">
+                        <h3 className="text-base font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>
                           {user.name}
                         </h3>
-                        <p className="text-sm truncate text-base-content/70">
+                        <p className="text-sm truncate" style={{ color: 'var(--color-text-secondary)' }}>
                           {user.email || "No email available"}
                         </p>
                       </div>
@@ -306,6 +306,7 @@ const FriendsPage = () => {
                         ? "btn-secondary"
                         : "btn-primary"
                       } ${user.isLoading ? "loading" : ""}`}
+                      style={{ color: 'white' }}
                     >
                       {user.isLoading ? (
                         "Connecting..."

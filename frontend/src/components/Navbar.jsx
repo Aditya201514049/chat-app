@@ -142,40 +142,51 @@ const Navbar = () => {
           </div>
           <ul 
             tabIndex={0} 
-            className={`menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52 ${isMobileMenuOpen ? 'block' : 'hidden'}`}
+            className={`menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow rounded-box w-52 ${isMobileMenuOpen ? 'block' : 'hidden'}`}
             ref={mobileDropdownRef}
+            style={{ 
+              backgroundColor: 'var(--color-bg-dropdown)',
+              borderColor: 'var(--color-border-dropdown)',
+              boxShadow: 'var(--shadow-md)'
+            }}
           >
             {token ? (
               <>
                 <li>
                   <Link 
                     to="/home" 
-                    style={{ color: isActive('/home') ? '#6366f1' : '' }}
-                    className={isActive('/home') ? 'font-bold active !text-primary' : ''}
-                >
-                  Home
-              </Link>
+                    style={{ 
+                      color: isActive('/home') ? 'var(--color-button-primary)' : 'var(--color-text-primary)',
+                      fontWeight: isActive('/home') ? 'bold' : 'normal'
+                    }}
+                  >
+                    Home
+                  </Link>
                 </li>
                 <li>
                   <Link 
                     to="/friends" 
-                    style={{ color: isActive('/friends') ? '#6366f1' : '' }}
-                    className={isActive('/friends') ? 'font-bold active !text-primary' : ''}
-                >
-                  Friends
-              </Link>
+                    style={{ 
+                      color: isActive('/friends') ? 'var(--color-button-primary)' : 'var(--color-text-primary)',
+                      fontWeight: isActive('/friends') ? 'bold' : 'normal'
+                    }}
+                  >
+                    Friends
+                  </Link>
                 </li>
                 <li>
-                      <Link 
-                        to="/profile"
-                    style={{ color: isActive('/profile') ? '#6366f1' : '' }}
-                    className={isActive('/profile') ? 'font-bold active !text-primary' : ''}
-                      >
+                  <Link 
+                    to="/profile"
+                    style={{ 
+                      color: isActive('/profile') ? 'var(--color-button-primary)' : 'var(--color-text-primary)',
+                      fontWeight: isActive('/profile') ? 'bold' : 'normal'
+                    }}
+                  >
                     Profile
-                      </Link>
+                  </Link>
                 </li>
                 <li>
-                  <a onClick={handleLogout} className="text-error">Logout</a>
+                  <a onClick={handleLogout} style={{ color: 'var(--color-text-error)' }}>Logout</a>
                 </li>
               </>
             ) : (
@@ -183,20 +194,24 @@ const Navbar = () => {
                 <li>
                   <Link 
                     to="/login" 
-                    style={{ color: isActive('/login') ? '#6366f1' : '' }}
-                    className={isActive('/login') ? 'font-bold active !text-primary' : ''}
+                    style={{ 
+                      color: isActive('/login') ? 'var(--color-button-primary)' : 'var(--color-text-primary)',
+                      fontWeight: isActive('/login') ? 'bold' : 'normal'
+                    }}
                   >
                     Login
                   </Link>
                 </li>
                 <li>
-                    <Link
-                      to="/register"
-                    style={{ color: isActive('/register') ? '#6366f1' : '' }}
-                    className={isActive('/register') ? 'font-bold active !text-primary' : ''}
-                    >
-                      Register
-                    </Link>
+                  <Link
+                    to="/register"
+                    style={{ 
+                      color: isActive('/register') ? 'var(--color-button-primary)' : 'var(--color-text-primary)',
+                      fontWeight: isActive('/register') ? 'bold' : 'normal'
+                    }}
+                  >
+                    Register
+                  </Link>
                 </li>
               </>
             )}
@@ -264,31 +279,35 @@ const Navbar = () => {
                 <span>{userName.charAt(0).toUpperCase()}</span>
               </div>
             </div>
-            <ul tabIndex={0} className={`menu dropdown-content menu-sm z-[1] p-2 shadow bg-base-100 rounded-box w-52 mt-4 ${isDropdownOpen ? 'block' : 'hidden'}`}>
-              <li className="p-2 border-b border-base-200">
-                <div className="font-bold">{userName}</div>
-                <div className="text-xs opacity-60">{userEmail}</div>
+            <ul tabIndex={0} className={`menu dropdown-content menu-sm z-[1] p-2 shadow bg-base-100 rounded-box w-52 mt-4 ${isDropdownOpen ? 'block' : 'hidden'}`} style={{ 
+              backgroundColor: 'var(--color-bg-dropdown)',
+              borderColor: 'var(--color-border-dropdown)',
+              boxShadow: 'var(--shadow-md)'
+            }}>
+              <li className="p-2 border-b" style={{ borderColor: 'var(--color-border-light)' }}>
+                <div className="font-bold" style={{ color: 'var(--color-text-primary)' }}>{userName}</div>
+                <div className="text-xs opacity-60" style={{ color: 'var(--color-text-tertiary)' }}>{userEmail}</div>
               </li>
               <li>
-                    <Link
-                      to="/profile"
-                      style={{ 
-                    backgroundColor: isActive('/profile') ? '#6366f1' : '',
-                    color: isActive('/profile') ? 'white' : ''
-                      }}
-                    >
+                <Link
+                  to="/profile"
+                  style={{ 
+                    backgroundColor: isActive('/profile') ? 'var(--color-bg-highlight)' : '',
+                    color: 'var(--color-text-primary)'
+                  }}
+                >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                      Profile
-                    </Link>
+                  Profile
+                </Link>
               </li>
               <li>
-                <a onClick={handleLogout} className="text-error">
+                <a onClick={handleLogout} style={{ color: 'var(--color-text-error)' }}>
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
-                        Logout
+                  Logout
                 </a>
               </li>
             </ul>
