@@ -674,183 +674,229 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError, on
     }
   };
 
+  // Format timestamp for messages
+  const formatMessageTime = (timestamp) => {
+    if (!timestamp) return "";
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Get a friendly date header for message groups
+  const getMessageDateString = (timestamp) => {
+    if (!timestamp) return "";
+    
+    const messageDate = new Date(timestamp);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    
+    if (messageDate.toDateString() === today.toDateString()) {
+      return "Today";
+    } else if (messageDate.toDateString() === yesterday.toDateString()) {
+      return "Yesterday";
+    } else {
+      return messageDate.toLocaleDateString([], { 
+        weekday: 'long', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    }
+  };
+
+  // Group messages by date for better UI organization
+  const groupMessagesByDate = (messages) => {
+    const groups = [];
+    let currentDate = null;
+    let currentMessages = [];
+    
+    messages.forEach(message => {
+      const messageDate = new Date(message.createdAt || Date.now());
+      const dateString = messageDate.toDateString();
+      
+      if (dateString !== currentDate) {
+        if (currentMessages.length > 0) {
+          groups.push({
+            date: currentDate,
+            formattedDate: getMessageDateString(currentMessages[0].createdAt),
+            messages: currentMessages
+          });
+        }
+        currentDate = dateString;
+        currentMessages = [message];
+      } else {
+        currentMessages.push(message);
+      }
+    });
+    
+    if (currentMessages.length > 0) {
+      groups.push({
+        date: currentDate,
+        formattedDate: getMessageDateString(currentMessages[0].createdAt),
+        messages: currentMessages
+      });
+    }
+    
+    return groups;
+  };
+
+  // Scroll to bottom of messages
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const messageGroups = groupMessagesByDate(messages.filter(msg => msg.chatId === chatId));
+  const otherUser = activeChat?.otherUser || {};
+
   return (
     <div className="flex flex-col h-full">
-      {!chatId ? (
-        <div className="flex-1 flex flex-col items-center justify-center p-6">
-          <img
-            src="https://img.icons8.com/fluent/96/000000/chat.png"
-            alt="Chat"
-            className="w-24 h-24 mb-4 opacity-50"
-          />
-          <h3 className="text-xl font-semibold text-gray-800">
-            Select a conversation to start chatting
-          </h3>
-        </div>
-      ) : (
-        <>
-          {/* Chat header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b shadow-sm bg-white">
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={onBack}
-                className="md:hidden p-1 rounded-full hover:bg-gray-200"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-gray-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-              </button>
-              <div className="flex items-center">
-                <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-500">
-                  <span className="font-semibold">
-                    {chatName?.charAt(0)?.toUpperCase() || "?"}
-                  </span>
-                </div>
-                <div className="ml-3">
-                  <h2 className="text-lg font-semibold text-gray-800 max-w-[150px] truncate">
-                    {chatName || "Chat"}
-                  </h2>
-                  {isConnected ? (
-                    <p className="text-xs text-green-600">Connected</p>
-                  ) : (
-                    <p className="text-xs text-red-500">Disconnected</p>
-                  )}
-                </div>
-              </div>
-            </div>
+      {/* Chat header */}
+      <div className="bg-gradient-to-r from-primary/80 to-primary p-4 flex items-center shadow-md">
+        <button 
+          onClick={onBack} 
+          className="btn btn-circle btn-ghost btn-sm mr-2 text-primary-content hover:bg-primary-focus/50"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+        </button>
+        
+        <div className="avatar placeholder mr-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary text-primary-content flex items-center justify-center">
+            <span className="text-base font-bold">
+              {otherUser.name ? otherUser.name.charAt(0).toUpperCase() : "?"}
+            </span>
           </div>
-
-          {/* Messages section */}
-          <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
-            {loading && messages.length === 0 ? (
-              <div className="flex justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mt-6"></div>
+        </div>
+        
+        {isTyping && (
+          <div className="text-xs text-primary-content flex items-center">
+            <span className="mr-1">typing</span>
+            <span className="loading loading-dots loading-xs"></span>
+          </div>
+        )}
+      </div>
+      
+      {/* Error message */}
+      {error && (
+        <div className="alert alert-error mx-4 my-2 shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span>{error}</span>
+        </div>
+      )}
+      
+      {/* Messages area */}
+      <div className="flex-grow overflow-y-auto p-4 bg-gradient-to-b from-base-100 to-base-200/50">
+        {loading ? (
+          <div className="flex justify-center items-center h-full">
+            <div className="loading loading-spinner loading-lg text-primary"></div>
+          </div>
+        ) : (
+          <>
+            {messageGroups.length === 0 ? (
+              <div className="flex flex-col justify-center items-center h-full text-center">
+                <div className="mb-4 text-6xl opacity-30 bg-gradient-to-br from-primary to-secondary bg-clip-text text-transparent">💬</div>
+                <h3 className="text-lg font-semibold mb-2">No messages yet</h3>
+                <p className="text-base-content/70">
+                  Send a message to start the conversation
+                </p>
               </div>
             ) : (
-              <>
-                {/* Show loading indicator for older messages at the top */}
-                {loading && messages.length > 0 && (
-                  <div className="flex justify-center mb-4">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+              messageGroups.map((group, groupIndex) => (
+                <div key={group.date} className="mb-6">
+                  {/* Date separator */}
+                  <div className="divider text-xs text-base-content/60 before:bg-primary/20 after:bg-primary/20">
+                    {group.formattedDate}
                   </div>
-                )}
-                {error && (
-                  <div className="bg-red-100 text-red-800 p-3 rounded-md text-sm mb-4">
-                    {error}
-                  </div>
-                )}
-                {messages
-                  .filter((msg) => msg.chatId === chatId)
-                  .map((message, index) => (
-                    <div
-                      key={message._id || index}
-                      className={`flex mb-3 ${
-                        message.sender === userId
-                          ? "justify-end"
-                          : "justify-start"
-                      }`}
-                    >
-                      <div
-                        className={`rounded-lg px-4 py-2 max-w-[80%] break-words relative ${
-                          message.sender === userId
-                            ? "bg-blue-500 text-white"
-                            : "bg-white text-gray-800 border border-gray-200"
-                        } ${message.pending ? "opacity-60" : ""}`}
+                  
+                  {/* Messages in this group */}
+                  {group.messages.map((message, index) => {
+                    const isCurrentUser = message.sender === userId;
+                    const showAvatar = 
+                      !isCurrentUser && 
+                      (index === 0 || group.messages[index - 1].sender !== message.sender);
+                    
+                    return (
+                      <div 
+                        key={message._id || `temp-${index}`} 
+                        className={`chat ${isCurrentUser ? 'chat-end' : 'chat-start'} mb-2`}
                       >
-                        {message.content}
-                        
-                        {/* Show message status indicators */}
-                        <div className="text-right">
-                          {message.pending && (
-                            <span className="text-xs opacity-75">
-                              Sending...
-                            </span>
-                          )}
-                          {message.failed && (
-                            <div className="flex flex-col items-end">
-                              <span className="text-xs text-red-300 mt-1">
-                                {message.error || "Failed to send"}
+                        {showAvatar && !isCurrentUser && (
+                          <div className="chat-image avatar placeholder">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-secondary to-accent text-primary-content flex items-center justify-center">
+                              <span className="text-base font-bold">
+                                {otherUser.name ? otherUser.name.charAt(0).toUpperCase() : "?"}
                               </span>
-                              {message.canRetry && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRetryMessage(message);
-                                  }}
-                                  className="text-xs text-red-300 hover:text-red-100 hover:underline mt-1"
-                                >
-                                  Retry
-                                </button>
-                              )}
                             </div>
+                          </div>
+                        )}
+                        
+                        <div className={`chat-bubble shadow-sm ${
+                          isCurrentUser 
+                            ? message.error 
+                              ? 'chat-bubble-error' 
+                              : message.pending 
+                                ? 'bg-primary/60 text-primary-content' 
+                                : 'bg-gradient-to-r from-primary to-primary-focus text-primary-content' 
+                            : 'bg-base-300 text-base-content'
+                        }`}>
+                          {message.content}
+                          
+                          {message.error && (
+                            <button 
+                              onClick={() => handleRetryMessage(message)}
+                              className="text-xs underline ml-2"
+                            >
+                              Retry
+                            </button>
                           )}
-                          {!message.pending && !message.failed && (
-                            <span className="text-xs opacity-75">
-                              {new Date(message.createdAt).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
+                        </div>
+                        
+                        <div className="chat-footer opacity-70 text-xs flex gap-1">
+                          {formatMessageTime(message.createdAt)}
+                          {message.pending && (
+                            <span className="flex items-center">
+                              <span className="mr-1">sending</span>
+                              <span className="loading loading-dots loading-xs"></span>
                             </span>
                           )}
                         </div>
                       </div>
-                    </div>
-                  ))}
-                <div ref={messagesEndRef} />
-              </>
+                    );
+                  })}
+                </div>
+              ))
             )}
-          </div>
-
-          {/* Typing indicator */}
-          {isTyping && (
-            <div className="px-4 py-2 text-gray-500 text-xs italic">
-              Someone is typing...
-            </div>
-          )}
-
-          {/* Message input form */}
-          <form onSubmit={handleSendMessage} className="p-3 bg-white border-t">
-            <div className="flex items-center">
-              <input
-                type="text"
-                value={messageContent}
-                onChange={handleTyping}
-                placeholder="Type a message..."
-                className="flex-1 py-2 px-3 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              />
-              <button
-                type="submit"
-                disabled={!messageContent.trim()}
-                className={`px-4 py-2 rounded-r-md ${
-                  messageContent.trim()
-                    ? "bg-blue-500 text-white hover:bg-blue-600"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }`}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                </svg>
-              </button>
-            </div>
-          </form>
-        </>
-      )}
+            <div ref={messagesEndRef} />
+          </>
+        )}
+      </div>
+      
+      {/* Message input */}
+      <div className="p-3 bg-base-200 shadow-inner">
+        <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+          <input
+            type="text"
+            value={messageContent}
+            onChange={handleTyping}
+            placeholder="Type a message..."
+            className="input input-bordered flex-grow bg-base-100 focus:border-primary"
+            disabled={loading}
+          />
+          <button 
+            type="submit" 
+            className="btn btn-circle bg-gradient-to-r from-primary to-primary-focus text-primary-content hover:bg-primary-focus border-none"
+            disabled={!messageContent.trim() || loading}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+            </svg>
+          </button>
+        </form>
+      </div>
     </div>
   );
 };

@@ -391,98 +391,117 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
     return !otherUser || otherUser.name === 'Deleted User' || otherUser.email === 'account-deleted';
   };
 
-  return (
-    <div className="flex flex-col h-full">
-      {error && (
-        <div className="mx-4 mt-2 p-2 bg-red-100 text-red-800 rounded-md text-sm">
-          <p>{error}</p>
-          <button 
-            onClick={fetchChatRooms}
-            className="mt-2 text-xs font-medium text-red-800 hover:underline"
-          >
-            Try Again
-          </button>
-        </div>
-      )}
-
-      {loading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        </div>
-      ) : (
-        <div className="flex-1 overflow-y-auto">
-      {chatRooms.length > 0 ? (
-            // Use a Set-based approach to remove any duplicate IDs
-            [...new Map(chatRooms.map(room => [getChatUniqueId(room), room])).values()].map((room) => {
-              const chatId = getChatUniqueId(room);
-              const unreadCount = unreadCounts[chatId] || 0;
-              
-              return (
-                <div
-                  key={chatId}
-                  className={`p-3 border-b border-gray-100 flex items-center cursor-pointer hover:bg-gray-50 transition-colors ${
-              selectedChatId === room._id
-                      ? "bg-blue-50 border-l-4 border-l-blue-500"
-                      : ""
-                  } ${isDeletedUser(room.otherUser) ? "opacity-60" : ""}`}
-            onClick={() => handleChatSelect(room)}
-          >
-                  <div className={`relative flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center text-blue-500 mr-3 ${
-                    isDeletedUser(room.otherUser) ? "bg-gray-200" : "bg-blue-100"
-                  }`}>
-                    <span className="font-semibold">
-                      {room.otherUser?.name?.charAt(0)?.toUpperCase() || "?"}
-                    </span>
-                    
-                    {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                        {unreadCount > 9 ? '9+' : unreadCount}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-            <div className="flex items-center">
-                        <h3 className="text-sm font-medium text-gray-900 truncate">
-                          {room.otherUser?.name || "Unknown User"}
-                        </h3>
-                        {isDeletedUser(room.otherUser) && (
-                          <span className="ml-2 px-1.5 py-0.5 text-xs bg-gray-200 text-gray-600 rounded">
-                            Deleted
-                          </span>
-                        )}
-                      </div>
-                      
-                      {unreadCount > 0 && (
-                        <span className="ml-1 text-xs text-white bg-blue-500 rounded-full px-2 py-0.5 font-bold">
-                          {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
-                      )}
+  // Component for rendering individual chat items
+  const ChatItem = ({ room, isSelected, handleSelect }) => {
+    const otherUser = room.otherUser || {};
+    const lastMessageText = room.lastMessage || "Start a conversation";
+    const lastMessageDate = room.updatedAt ? new Date(room.updatedAt) : new Date();
+    const timeString = formatTimeOrDate(lastMessageDate);
+    const unreadCount = unreadCounts[getChatUniqueId(room)] || 0;
+    const isDeleted = isDeletedUser(otherUser);
+    
+    return (
+      <div 
+        onClick={() => handleSelect(room)}
+        className={`card cursor-pointer transition-all hover:bg-base-200/70 ${
+          isSelected ? 'bg-primary/10 border-l-4 border-primary shadow-md' : 'bg-base-100 hover:shadow-md shadow-sm'
+        } mb-3 overflow-hidden`}
+      >
+        <div className="card-body p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="avatar placeholder">
+                <div className={`w-12 h-12 rounded-full ${
+                  isDeleted 
+                    ? 'bg-neutral/20 text-neutral-content' 
+                    : 'bg-gradient-to-br from-primary to-secondary text-primary-content'
+                } flex items-center justify-center`}>
+                  <span className="text-lg font-bold">
+                    {otherUser.name ? otherUser.name.charAt(0).toUpperCase() : "?"}
+                  </span>
+                </div>
               </div>
-                    <div className="flex justify-between items-center">
-                      <p className="text-xs text-gray-500 truncate max-w-[70%]">
-                        {room.lastMessage || room.otherUser?.email || "No messages yet"}
-                      </p>
-                      {room.updatedAt && (
-                        <span className="text-xs text-gray-400">
-                          {new Date(room.updatedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                        </span>
-                      )}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-base-content truncate">
+                  {isDeleted ? "Deleted User" : otherUser.name || "Unknown User"}
+                </h3>
+                <p className="text-sm text-base-content/70 truncate">
+                  {lastMessageText}
+                </p>
               </div>
+            </div>
+            <div className="flex flex-col items-end justify-between h-full">
+              <span className="text-xs text-base-content/60 mb-1">
+                {timeString}
+              </span>
+              {unreadCount > 0 && (
+                <div className="badge badge-primary badge-sm">{unreadCount}</div>
+              )}
             </div>
           </div>
-              );
-            })
-          ) : (
-            <div className="p-6 text-center">
-              <p className="text-gray-500 text-sm">
-                Your chats will appear here
-              </p>
-              <p className="text-gray-400 text-xs mt-1">
-                Find friends to start chatting
-              </p>
-            </div>
-          )}
+        </div>
+      </div>
+    );
+  };
+
+  const formatTimeOrDate = (date) => {
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    
+    // Same day
+    if (date.toDateString() === now.toDateString()) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } 
+    // Yesterday
+    else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } 
+    // This week (show day name)
+    else if (now.getTime() - date.getTime() < 7 * 24 * 60 * 60 * 1000) {
+      return date.toLocaleDateString([], { weekday: 'short' });
+    } 
+    // Older (show date)
+    else {
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+  };
+
+  return (
+    <div className="h-full flex flex-col bg-base-100/50">
+      {/* Error display */}
+      {error && (
+        <div className="alert alert-error m-3 shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span>{error}</span>
+        </div>
+      )}
+      
+      {/* Loading state */}
+      {loading ? (
+        <div className="flex justify-center items-center flex-grow p-8">
+          <div className="loading loading-spinner loading-lg text-primary"></div>
+        </div>
+      ) : chatRooms.length === 0 ? (
+        <div className="flex flex-col justify-center items-center flex-grow p-8 text-center">
+          <div className="mb-4 text-6xl opacity-30 bg-gradient-to-br from-primary to-secondary bg-clip-text text-transparent">💬</div>
+          <h3 className="text-lg font-semibold mb-2">No chats yet</h3>
+          <p className="text-base-content/70">
+            Start a conversation with a friend to begin chatting
+          </p>
+        </div>
+      ) : (
+        <div className="p-3 overflow-y-auto flex-grow">
+          {chatRooms.map((room) => (
+            <ChatItem
+              key={getChatUniqueId(room)}
+              room={room}
+              isSelected={selectedChatId === getChatUniqueId(room)}
+              handleSelect={handleChatSelect}
+            />
+          ))}
         </div>
       )}
     </div>

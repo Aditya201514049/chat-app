@@ -90,243 +90,153 @@ const Navbar = () => {
     return location.pathname === path;
   };
 
+  // Custom styles to override DaisyUI defaults
+  const navLinkStyles = {
+    active: "bg-white !text-primary font-bold !important", // Use !important to override any other styles
+    default: "text-primary-content hover:bg-primary-focus/30"
+  };
+
   if (loading) {
     return (
-      <nav className="fixed top-0 left-0 w-full z-50" style={{ backgroundColor: 'var(--color-bg-navbar)', color: 'var(--color-text-navbar)' }}>
-        <div className="container mx-auto flex justify-between items-center px-4 py-3">
-          <h1 className="text-2xl font-bold">Loading...</h1>
+      <div className="navbar bg-gradient-to-r from-primary/90 to-primary fixed top-0 left-0 w-full z-50 shadow-md">
+        <div className="navbar-start">
+          <span className="text-xl font-bold text-primary-content">Chat App</span>
         </div>
-      </nav>
+        <div className="navbar-end">
+          <span className="loading loading-spinner loading-sm text-primary-content"></span>
+        </div>
+      </div>
     );
   }
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 transition-colors" style={{ backgroundColor: 'var(--color-bg-navbar)', color: 'var(--color-text-navbar)' }}>
-      <div className="container mx-auto flex justify-between items-center px-4 py-3">
-        <Link to="/" className="text-2xl font-bold">Chat App</Link>
-
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center space-x-4">
-          {!token ? (
-            <>
-              <Link to="/register">
-                <button style={{ backgroundColor: 'var(--color-button-primary)', color: 'var(--color-text-navbar)' }} className="px-4 py-1.5 rounded-md transition-colors hover:opacity-90">
-                  Register
-                </button>
-              </Link>
-              <Link to="/login">
-                <button style={{ backgroundColor: 'white', color: 'var(--color-bg-navbar)' }} className="px-4 py-1.5 rounded-md transition-colors hover:opacity-90">
-                  Login
-                </button>
-              </Link>
-              <ThemeToggle />
-            </>
-          ) : (
-            <>
-              <Link to="/home">
-                <button 
-                  className="px-4 py-1.5 rounded-md transition-colors" 
-                  style={{ 
-                    backgroundColor: isActive('/home') ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
-                    color: 'var(--color-text-navbar)'
-                  }}
+    <div className="navbar bg-gradient-to-r from-primary/90 to-primary fixed top-0 left-0 w-full z-50 shadow-md">
+      <div className="navbar-start">
+        <div className="dropdown">
+          <div tabIndex={0} role="button" className="btn btn-ghost text-primary-content lg:hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h8m-8 6h16" />
+            </svg>
+          </div>
+          {token && (
+            <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+              <li>
+                <Link 
+                  to="/home" 
+                  style={{ color: isActive('/home') ? '#6366f1' : '' }}
+                  className={isActive('/home') ? 'font-bold active !text-primary' : ''}
                 >
                   Home
-                </button>
-              </Link>
-              <Link to="/friends">
-                <button 
-                  className="px-4 py-1.5 rounded-md transition-colors" 
-                  style={{ 
-                    backgroundColor: isActive('/friends') ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
-                    color: 'var(--color-text-navbar)'
-                  }}
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  to="/friends" 
+                  style={{ color: isActive('/friends') ? '#6366f1' : '' }}
+                  className={isActive('/friends') ? 'font-bold active !text-primary' : ''}
                 >
                   Friends
-                </button>
-              </Link>
-              
-              <ThemeToggle />
-              
-              <div className="relative" ref={desktopDropdownRef}>
-                <button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center space-x-1 px-2 py-1 rounded-md hover:bg-opacity-20 hover:bg-white/20 transition-colors"
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  to="/profile" 
+                  style={{ color: isActive('/profile') ? '#6366f1' : '' }}
+                  className={isActive('/profile') ? 'font-bold active !text-primary' : ''}
                 >
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}>
-                    <span className="text-sm font-bold">{userName.charAt(0).toUpperCase()}</span>
-                  </div>
-                  <span className="text-sm font-medium hidden sm:block">{userName}</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg overflow-hidden" style={{ backgroundColor: 'var(--color-bg-dropdown)', borderColor: 'var(--color-border-dropdown)', color: 'var(--color-text-primary)' }}>
-                    <div className="p-3 border-b" style={{ borderColor: 'var(--color-border-light)' }}>
-                      <p className="font-bold">{userName}</p>
-                      <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>{userEmail}</p>
-                    </div>
-                    <div>
-                      <Link 
-                        to="/profile"
-                        className="block w-full text-left px-4 py-2 text-sm transition-colors hover:bg-opacity-10 hover:bg-gray-500"
-                        onClick={() => setIsDropdownOpen(false)}
-                        style={{ color: 'var(--color-text-primary)' }}
-                      >
-                        View Profile
-                      </Link>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full text-left px-4 py-2 text-sm transition-colors hover:bg-opacity-10 hover:bg-gray-500"
-                        style={{ color: 'var(--color-text-error)' }}
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </>
+                  Profile
+                </Link>
+              </li>
+              <li>
+                <a onClick={handleLogout} className="text-error">Logout</a>
+              </li>
+            </ul>
           )}
         </div>
-
-        {/* Mobile Navigation */}
-        <div className="md:hidden flex items-center space-x-2">
-          <ThemeToggle />
-          
-          <button
-            onClick={() => {
-              setIsMobileMenuOpen(!isMobileMenuOpen);
-            }}
-            onTouchEnd={(e) => {
-              e.preventDefault(); // Prevent default to avoid double-firing
-              setIsMobileMenuOpen(!isMobileMenuOpen);
-            }}
-            data-mobile-toggle="true"
-            className="p-2 rounded-md hover:bg-opacity-20 hover:bg-white/20 transition-colors"
-            style={{ touchAction: "manipulation" }} // Improve touch handling
-          >
-            {isMobileMenuOpen ? (
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+        <Link to="/" className="btn btn-ghost text-xl text-primary-content">Chat App</Link>
+      </div>
+      
+      {/* Desktop navigation links */}
+      <div className="navbar-center hidden lg:flex">
+        {token && (
+          <ul className="menu menu-horizontal px-1">
+            <li className="mx-1">
+              <Link 
+                to="/home" 
+                style={{ 
+                  backgroundColor: isActive('/home') ? 'white' : 'transparent',
+                  color: isActive('/home') ? '#6366f1' : 'white'
+                }}
+                className="font-medium hover:bg-primary-focus/30"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            ) : (
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+                Home
+              </Link>
+            </li>
+            <li className="mx-1">
+              <Link 
+                to="/friends" 
+                style={{ 
+                  backgroundColor: isActive('/friends') ? 'white' : 'transparent',
+                  color: isActive('/friends') ? '#6366f1' : 'white'
+                }}
+                className="font-medium hover:bg-primary-focus/30"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            )}
-          </button>
-
-          {/* Mobile Dropdown Menu */}
-          {isMobileMenuOpen && (
-            <div
-              ref={mobileDropdownRef}
-              className="absolute right-0 top-full mt-1 w-56 rounded-lg shadow-lg overflow-hidden z-40"
-              style={{ 
-                backgroundColor: 'var(--color-bg-secondary)', 
-                borderColor: 'var(--color-border-light)',
-                maxHeight: '80vh',
-                overflowY: 'auto',
-                touchAction: 'pan-y'
-              }}
-            >
-              <div className="flex flex-col p-2 space-y-1">
-                {!token ? (
-                  <>
-                    <Link
-                      to="/register"
-                      className="text-left px-4 py-3 rounded-md transition-colors hover:bg-opacity-10 hover:bg-gray-500"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      style={{ color: 'var(--color-text-primary)' }}
-                    >
-                      Register
-                    </Link>
-                    <Link
-                      to="/login"
-                      className="text-left px-4 py-3 rounded-md transition-colors hover:bg-opacity-10 hover:bg-gray-500"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      style={{ color: 'var(--color-text-primary)' }}
-                    >
-                      Login
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      to="/home"
-                      className="text-left px-4 py-3 rounded-md transition-colors hover:bg-opacity-10 hover:bg-gray-500"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      style={{ 
-                        backgroundColor: isActive('/home') ? 'var(--color-bg-highlight)' : 'transparent', 
-                        color: 'var(--color-text-primary)' 
-                      }}
-                    >
-                      Home
-                    </Link>
-                    <Link
-                      to="/friends"
-                      className="text-left px-4 py-3 rounded-md transition-colors hover:bg-opacity-10 hover:bg-gray-500"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      style={{ 
-                        backgroundColor: isActive('/friends') ? 'var(--color-bg-highlight)' : 'transparent', 
-                        color: 'var(--color-text-primary)' 
-                      }}
-                    >
-                      Friends
-                    </Link>
-                    <Link
-                      to="/profile"
-                      className="text-left px-4 py-3 rounded-md transition-colors hover:bg-opacity-10 hover:bg-gray-500"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      style={{ 
-                        backgroundColor: isActive('/profile') ? 'var(--color-bg-highlight)' : 'transparent', 
-                        color: 'var(--color-text-primary)' 
-                      }}
-                    >
-                      Profile
-                    </Link>
-                    <div className="border-t pt-2 mt-1" style={{ borderColor: 'var(--color-border-light)' }}>
-                      <div className="px-4 py-2">
-                        <p className="font-bold" style={{ color: 'var(--color-text-primary)' }}>{userName}</p>
-                        <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>{userEmail}</p>
-                      </div>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full text-left px-4 py-3 text-sm rounded-md hover:bg-opacity-10 hover:bg-gray-500"
-                        style={{ color: 'var(--color-text-error)' }}
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  </>
-                )}
+                Friends
+              </Link>
+            </li>
+          </ul>
+        )}
+      </div>
+      
+      <div className="navbar-end">
+        <ThemeToggle />
+        
+        {!token ? (
+          <div className="flex items-center gap-2 ml-2">
+            <Link to="/login" className="btn btn-sm btn-ghost text-primary-content hover:bg-primary-focus/50">
+              Login
+            </Link>
+            <Link to="/register" className="btn btn-sm bg-white text-primary hover:bg-base-200">
+              Register
+            </Link>
+          </div>
+        ) : (
+          <div className="dropdown dropdown-end ml-2" ref={desktopDropdownRef}>
+            <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar placeholder">
+              <div className="bg-white text-primary rounded-full w-10">
+                <span>{userName.charAt(0).toUpperCase()}</span>
               </div>
             </div>
-          )}
-        </div>
+            <ul tabIndex={0} className="menu dropdown-content menu-sm z-[1] p-2 shadow bg-base-100 rounded-box w-52 mt-4">
+              <li className="p-2 border-b border-base-200">
+                <div className="font-bold">{userName}</div>
+                <div className="text-xs opacity-60">{userEmail}</div>
+              </li>
+              <li>
+                <Link 
+                  to="/profile" 
+                  style={{ color: isActive('/profile') ? '#6366f1' : '' }}
+                  className={isActive('/profile') ? 'font-bold active !text-primary' : ''}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Profile
+                </Link>
+              </li>
+              <li>
+                <a onClick={handleLogout} className="text-error">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Logout
+                </a>
+              </li>
+            </ul>
+          </div>
+        )}
       </div>
-    </nav>
+    </div>
   );
 };
 
