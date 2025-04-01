@@ -8,8 +8,8 @@ const ContactPage = () => {
     message: ''
   });
   
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
   
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -18,199 +18,216 @@ const ContactPage = () => {
   
   const handleSubmit = (e) => {
     e.preventDefault();
-    setSubmitting(true);
+    setIsSubmitting(true);
     
     // Simulate API call
     setTimeout(() => {
-      setSubmitting(false);
-      setSubmitted(true);
+      setIsSubmitting(false);
+      setSubmitSuccess(true);
       setFormData({
         name: '',
         email: '',
         subject: '',
         message: ''
       });
-    }, 1000);
+
+      // Reset success message after a delay
+      setTimeout(() => {
+        setSubmitSuccess(false);
+      }, 5000);
+    }, 1500);
   };
   
   return (
     <div className="container mx-auto px-4 py-12 mt-16">
       {/* Hero Section */}
       <div className="text-center mb-16">
-        <h1 className="text-4xl font-bold mb-6 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Contact Us</h1>
-        <p className="text-xl max-w-3xl mx-auto text-base-content/70">
-          Have questions or feedback? We're here to help.
+        <h1 className="text-4xl font-bold mb-6" style={{ 
+          background: 'linear-gradient(to right, var(--color-button-primary), var(--color-button-primary-hover))', 
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text'
+        }}>
+          Contact Us
+        </h1>
+        <p className="text-xl max-w-3xl mx-auto" style={{ color: 'var(--color-text-secondary)' }}>
+          Have questions or feedback? We'd love to hear from you.
         </p>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-5xl mx-auto mb-20">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 max-w-6xl mx-auto">
         {/* Contact Information */}
-        <div>
-          <div className="card bg-base-100 shadow-lg overflow-hidden">
+        <div className="lg:col-span-2 space-y-8">
+          <div className="card shadow-lg" style={{ backgroundColor: 'var(--color-bg-card)' }}>
             <div className="h-2 bg-gradient-to-r from-primary to-secondary"></div>
             <div className="card-body">
-              <h2 className="text-2xl font-bold mb-6 text-base-content">Get in Touch</h2>
+              <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--color-text-primary)' }}>Get in Touch</h2>
               
               <div className="space-y-6">
                 <div className="flex items-start">
-                  <div className="text-primary mr-4">
+                  <div className="mr-4" style={{ color: 'var(--color-button-primary)' }}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
                   <div>
-                    <h3 className="font-medium text-base-content">Email</h3>
-                    <a href="mailto:support@chatapp.com" className="text-primary hover:underline">support@chatapp.com</a>
-                    <p className="text-sm text-base-content/70 mt-1">We aim to respond within 24 hours</p>
+                    <h3 className="font-medium" style={{ color: 'var(--color-text-primary)' }}>Email Us</h3>
+                    <a href="mailto:support@chatapp.com" style={{ color: 'var(--color-button-primary)' }} className="hover:underline">support@chatapp.com</a>
+                    <p style={{ color: 'var(--color-text-secondary)' }}>We'll respond as soon as possible</p>
                   </div>
                 </div>
                 
                 <div className="flex items-start">
-                  <div className="text-primary mr-4">
+                  <div className="mr-4" style={{ color: 'var(--color-button-primary)' }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-medium" style={{ color: 'var(--color-text-primary)' }}>Call Us</h3>
+                    <a href="tel:+18001234567" style={{ color: 'var(--color-button-primary)' }} className="hover:underline">+1 (800) 123-4567</a>
+                    <p style={{ color: 'var(--color-text-secondary)' }}>Mon-Fri, 9am-5pm EST</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-start">
+                  <div className="mr-4" style={{ color: 'var(--color-button-primary)' }}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
                     </svg>
                   </div>
                   <div>
-                    <h3 className="font-medium text-base-content">Live Chat</h3>
-                    <p className="text-sm text-base-content/70">Available Monday-Friday, 9am-5pm EST</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start">
-                  <div className="text-primary mr-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14v4a2 2 0 01-2 2H7a2 2 0 01-2-2v-4m14-2l-5-5-5 5M9 8h1M9 12h1" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-base-content">Office</h3>
-                    <p className="text-sm text-base-content/70">123 App Street, Tech City, 10001</p>
+                    <h3 className="font-medium" style={{ color: 'var(--color-text-primary)' }}>Live Chat</h3>
+                    <p style={{ color: 'var(--color-text-secondary)' }}>Available during business hours</p>
                   </div>
                 </div>
               </div>
               
-              <div className="mt-8">
-                <h3 className="font-medium text-base-content mb-4">Connect With Us</h3>
-                <div className="flex gap-3">
-                  <button className="btn btn-circle btn-sm btn-ghost text-primary">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" className="bi bi-twitter-x" viewBox="0 0 16 16">
-                      <path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865z"/>
-                    </svg>
-                  </button>
-                  <button className="btn btn-circle btn-sm btn-ghost text-primary">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" className="bi bi-instagram" viewBox="0 0 16 16">
-                      <path d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.917 3.917 0 0 0-1.417.923A3.927 3.927 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.7.01 5.555 0 5.827 0 8.001c0 2.172.01 2.444.048 3.297.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.555 15.99 5.827 16 8 16s2.444-.01 3.298-.048c.851-.04 1.434-.174 1.943-.372a3.916 3.916 0 0 0 1.416-.923c.445-.445.718-.891.923-1.417.197-.509.332-1.09.372-1.942C15.99 10.445 16 10.173 16 8s-.01-2.445-.048-3.299c-.04-.851-.175-1.433-.372-1.941a3.926 3.926 0 0 0-.923-1.417A3.911 3.911 0 0 0 13.24.42c-.51-.198-1.092-.333-1.943-.372C10.443.01 10.172 0 7.998 0h.003zm-.717 1.442h.718c2.136 0 2.389.007 3.232.046.78.035 1.204.166 1.486.275.373.145.64.319.92.599.28.28.453.546.598.92.11.281.24.705.275 1.485.039.843.047 1.096.047 3.231s-.008 2.389-.047 3.232c-.035.78-.166 1.203-.275 1.485a2.47 2.47 0 0 1-.599.919c-.28.28-.546.453-.92.598-.28.11-.704.24-1.485.276-.843.038-1.096.047-3.232.047s-2.39-.009-3.233-.047c-.78-.036-1.203-.166-1.485-.276a2.478 2.478 0 0 1-.92-.598 2.48 2.48 0 0 1-.6-.92c-.109-.281-.24-.705-.275-1.485-.038-.843-.046-1.096-.046-3.233 0-2.136.008-2.388.046-3.231.036-.78.166-1.204.276-1.486.145-.373.319-.64.599-.92.28-.28.546-.453.92-.598.282-.11.705-.24 1.485-.276.738-.034 1.024-.044 2.515-.045v.002zm4.988 1.328a.96.96 0 1 0 0 1.92.96.96 0 0 0 0-1.92zm-4.27 1.122a4.109 4.109 0 1 0 0 8.217 4.109 4.109 0 0 0 0-8.217zm0 1.441a2.667 2.667 0 1 1 0 5.334 2.667 2.667 0 0 1 0-5.334"/>
-                    </svg>
-                  </button>
-                  <button className="btn btn-circle btn-sm btn-ghost text-primary">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/>
-                    </svg>
-                  </button>
-                </div>
+              <h3 className="font-medium mt-8 mb-4" style={{ color: 'var(--color-text-primary)' }}>Follow Us</h3>
+              <div className="flex space-x-4">
+                <a href="#" className="btn btn-circle btn-sm btn-ghost" style={{ color: 'var(--color-text-primary)' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="fill-current"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"></path></svg>
+                </a>
+                <a href="#" className="btn btn-circle btn-sm btn-ghost" style={{ color: 'var(--color-text-primary)' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="fill-current"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"></path></svg>
+                </a>
+                <a href="#" className="btn btn-circle btn-sm btn-ghost" style={{ color: 'var(--color-text-primary)' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" className="fill-current"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"></path></svg>
+                </a>
+                <a href="#" className="btn btn-circle btn-sm btn-ghost" style={{ color: 'var(--color-text-primary)' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="bi bi-linkedin" viewBox="0 0 16 16">
+                    <path d="M0 1.146C0 .513.526 0 1.175 0h13.65C15.474 0 16 .513 16 1.146v13.708c0 .633-.526 1.146-1.175 1.146H1.175C.526 16 0 15.487 0 14.854V1.146zm4.943 12.248V6.169H2.542v7.225h2.401zm-1.2-8.212c.837 0 1.358-.554 1.358-1.248-.015-.709-.52-1.248-1.342-1.248-.822 0-1.359.54-1.359 1.248 0 .694.521 1.248 1.327 1.248h.016zm4.908 8.212V9.359c0-.216.016-.432.08-.586.173-.431.568-.878 1.232-.878.869 0 1.216.662 1.216 1.634v3.865h2.401V9.25c0-2.22-1.184-3.252-2.764-3.252-1.274 0-1.845.7-2.165 1.193v.025h-.016a5.54 5.54 0 0 1 .016-.025V6.169h-2.4c.03.678 0 7.225 0 7.225h2.4z"/>
+                  </svg>
+                </a>
               </div>
+            </div>
+          </div>
+
+          {/* FAQs Preview */}
+          <div className="card shadow-lg" style={{ backgroundColor: 'var(--color-bg-card)' }}>
+            <div className="h-2 bg-gradient-to-r from-primary to-secondary"></div>
+            <div className="card-body">
+              <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>Frequently Asked Questions</h2>
+              <p className="mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+                Check out our FAQ page for quick answers to common questions.
+              </p>
+              <a href="/faq" className="btn btn-outline" style={{ color: 'var(--color-button-primary)', borderColor: 'var(--color-button-primary)' }}>View FAQs</a>
             </div>
           </div>
         </div>
         
         {/* Contact Form */}
-        <div className="card bg-base-100 shadow-lg overflow-hidden">
-          <div className="h-2 bg-gradient-to-r from-primary to-secondary"></div>
-          <div className="card-body">
-            <h2 className="text-2xl font-bold mb-6 text-base-content">Send us a Message</h2>
-            
-            {submitted ? (
-              <div className="alert alert-success">
-                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div>
-                  <h3 className="font-bold">Thank you for your message!</h3>
-                  <div className="text-sm">We'll get back to you as soon as possible.</div>
+        <div className="lg:col-span-3">
+          <div className="card shadow-lg" style={{ backgroundColor: 'var(--color-bg-card)' }}>
+            <div className="h-2 bg-gradient-to-r from-primary to-secondary"></div>
+            <div className="card-body">
+              <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--color-text-primary)' }}>Send Us a Message</h2>
+              
+              {submitSuccess ? (
+                <div className="alert alert-success shadow-lg mb-6">
+                  <div>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>Your message has been sent successfully!</span>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Name</span>
-                  </label>
-                  <input 
-                    type="text" 
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="input input-bordered w-full" 
-                    required 
-                  />
-                </div>
-                
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Email</span>
-                  </label>
-                  <input 
-                    type="email" 
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="input input-bordered w-full" 
-                    required 
-                  />
-                </div>
-                
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Subject</span>
-                  </label>
-                  <input 
-                    type="text" 
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleChange}
-                    className="input input-bordered w-full" 
-                    required 
-                  />
-                </div>
-                
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Message</span>
-                  </label>
-                  <textarea 
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    className="textarea textarea-bordered h-32" 
-                    required
-                  ></textarea>
-                </div>
-                
-                <div className="form-control mt-6">
-                  <button 
-                    type="submit" 
-                    className={`btn btn-primary ${submitting ? 'loading' : ''}`}
-                    disabled={submitting}
-                  >
-                    {submitting ? 'Sending...' : 'Send Message'}
-                  </button>
-                </div>
-              </form>
-            )}
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text" style={{ color: 'var(--color-text-primary)' }}>Name</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="John Doe"
+                        className="input input-bordered w-full"
+                        style={{ color: 'var(--color-text-primary)', backgroundColor: 'var(--color-bg-input)', borderColor: 'var(--color-border-light)' }}
+                        required
+                      />
+                    </div>
+                    <div className="form-control">
+                      <label className="label">
+                        <span className="label-text" style={{ color: 'var(--color-text-primary)' }}>Email</span>
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="john@example.com"
+                        className="input input-bordered w-full"
+                        style={{ color: 'var(--color-text-primary)', backgroundColor: 'var(--color-bg-input)', borderColor: 'var(--color-border-light)' }}
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text" style={{ color: 'var(--color-text-primary)' }}>Subject</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="subject"
+                      value={formData.subject}
+                      onChange={handleChange}
+                      placeholder="What's this about?"
+                      className="input input-bordered w-full"
+                      style={{ color: 'var(--color-text-primary)', backgroundColor: 'var(--color-bg-input)', borderColor: 'var(--color-border-light)' }}
+                      required
+                    />
+                  </div>
+                  <div className="form-control">
+                    <label className="label">
+                      <span className="label-text" style={{ color: 'var(--color-text-primary)' }}>Message</span>
+                    </label>
+                    <textarea
+                      name="message"
+                      value={formData.message}
+                      onChange={handleChange}
+                      placeholder="How can we help you?"
+                      className="textarea textarea-bordered h-40"
+                      style={{ color: 'var(--color-text-primary)', backgroundColor: 'var(--color-bg-input)', borderColor: 'var(--color-border-light)' }}
+                      required
+                    ></textarea>
+                  </div>
+                  <div className="form-control mt-6">
+                    <button 
+                      type="submit" 
+                      className={`btn btn-primary ${isSubmitting ? 'loading' : ''}`}
+                      disabled={isSubmitting}
+                      style={{ color: 'white' }}
+                    >
+                      {isSubmitting ? 'Sending...' : 'Send Message'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-      
-      {/* FAQ Preview */}
-      <div className="text-center mb-16">
-        <h2 className="text-2xl font-bold mb-4 text-base-content">Frequently Asked Questions</h2>
-        <p className="text-base-content/70 mb-6">
-          Can't find what you're looking for? Check out our FAQ section.
-        </p>
-        <a href="/faq" className="btn btn-outline btn-primary">
-          View FAQ
-        </a>
       </div>
     </div>
   );

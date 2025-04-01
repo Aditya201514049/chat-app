@@ -46,8 +46,13 @@ const FAQPage = () => {
     <div className="container mx-auto px-4 py-12 mt-16">
       {/* Hero Section */}
       <div className="text-center mb-16">
-        <h1 className="text-4xl font-bold mb-6 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Frequently Asked Questions</h1>
-        <p className="text-xl max-w-3xl mx-auto text-base-content/70">
+        <h1 className="text-4xl font-bold mb-6" style={{ 
+          background: 'linear-gradient(to right, var(--color-button-primary), var(--color-button-primary-hover))', 
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text'
+        }}>Frequently Asked Questions</h1>
+        <p className="text-xl max-w-3xl mx-auto" style={{ color: 'var(--color-text-secondary)' }}>
           Find answers to common questions about Chat App.
         </p>
       </div>
@@ -56,17 +61,17 @@ const FAQPage = () => {
       <div className="max-w-3xl mx-auto mb-16">
         <div className="join join-vertical w-full">
           {faqs.map((faq, index) => (
-            <div key={index} className="collapse collapse-arrow join-item border border-base-300">
+            <div key={index} className="collapse collapse-arrow join-item border" style={{ borderColor: 'var(--color-border-light)' }}>
               <input 
                 type="radio" 
                 name="faq-accordion" 
                 checked={openIndex === index}
                 onChange={() => toggleFAQ(index)}
               />
-              <div className="collapse-title text-xl font-medium text-base-content">
+              <div className="collapse-title text-xl font-medium" style={{ color: 'var(--color-text-primary)' }}>
                 {faq.question}
               </div>
-              <div className="collapse-content text-base-content/80">
+              <div className="collapse-content" style={{ color: 'var(--color-text-secondary)' }}>
                 <p>{faq.answer}</p>
               </div>
             </div>
@@ -75,35 +80,35 @@ const FAQPage = () => {
       </div>
 
       {/* Contact Section */}
-      <div className="card bg-base-100 shadow-lg max-w-3xl mx-auto mb-16 overflow-hidden">
+      <div className="card shadow-lg max-w-3xl mx-auto mb-16 overflow-hidden" style={{ backgroundColor: 'var(--color-bg-card)' }}>
         <div className="h-2 bg-gradient-to-r from-primary to-secondary"></div>
         <div className="card-body">
-          <h2 className="text-2xl font-bold mb-4 text-base-content">Still have questions?</h2>
-          <p className="text-base-content/80 mb-6">
+          <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>Still have questions?</h2>
+          <p className="mb-6" style={{ color: 'var(--color-text-secondary)' }}>
             If you couldn't find the answer to your question, please feel free to reach out to our support team.
             We're here to help!
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-start">
-              <div className="text-primary mr-3">
+              <div className="mr-3" style={{ color: 'var(--color-button-primary)' }}>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
               </div>
               <div>
-                <h3 className="font-medium text-base-content">Email Support</h3>
-                <a href="mailto:support@chatapp.com" className="text-primary hover:underline">support@chatapp.com</a>
+                <h3 className="font-medium" style={{ color: 'var(--color-text-primary)' }}>Email Support</h3>
+                <a href="mailto:support@chatapp.com" style={{ color: 'var(--color-button-primary)' }} className="hover:underline">support@chatapp.com</a>
               </div>
             </div>
             <div className="flex items-start">
-              <div className="text-primary mr-3">
+              <div className="mr-3" style={{ color: 'var(--color-button-primary)' }}>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
                 </svg>
               </div>
               <div>
-                <h3 className="font-medium text-base-content">Live Chat</h3>
-                <p className="text-base-content/70">Available Monday-Friday, 9am-5pm EST</p>
+                <h3 className="font-medium" style={{ color: 'var(--color-text-primary)' }}>Live Chat</h3>
+                <p style={{ color: 'var(--color-text-secondary)' }}>Available Monday-Friday, 9am-5pm EST</p>
               </div>
             </div>
           </div>
@@ -112,11 +117,11 @@ const FAQPage = () => {
 
       {/* Feedback Section */}
       <div className="text-center mb-12">
-        <h2 className="text-2xl font-bold mb-4 text-base-content">Help us improve</h2>
-        <p className="text-base-content/70 mb-6 max-w-2xl mx-auto">
+        <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-text-primary)' }}>Help us improve</h2>
+        <p className="mb-6 max-w-2xl mx-auto" style={{ color: 'var(--color-text-secondary)' }}>
           Your feedback helps us make Chat App better for everyone. Let us know what you think!
         </p>
-        <a href="/feedback" className="btn btn-primary">
+        <a href="/feedback" className="btn btn-primary" style={{ color: 'white' }}>
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
