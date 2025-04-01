@@ -400,48 +400,60 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
     const unreadCount = unreadCounts[getChatUniqueId(room)] || 0;
     const isDeleted = isDeletedUser(otherUser);
               
-              return (
-                <div
+    return (
+      <div
         onClick={() => handleSelect(room)}
-        className={`card cursor-pointer transition-all hover:bg-base-200/70 ${
-          isSelected ? 'bg-primary/10 border-l-4 border-primary shadow-md' : 'bg-base-100 hover:shadow-md shadow-sm'
-        } mb-3 overflow-hidden`}
+        className={`card cursor-pointer transition-all mb-3 overflow-hidden ${
+          isSelected ? 'border-l-4 shadow-md' : 'hover:shadow-md shadow-sm'
+        }`}
+        style={{
+          backgroundColor: isSelected ? 'var(--color-bg-highlight)' : 'var(--color-bg-card)',
+          borderLeftColor: isSelected ? 'var(--color-button-primary)' : 'transparent',
+        }}
       >
         <div className="card-body p-3">
-                    <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="avatar placeholder">
-                <div className={`w-12 h-12 rounded-full ${
-                  isDeleted 
-                    ? 'bg-neutral/20 text-neutral-content' 
-                    : 'bg-gradient-to-br from-primary to-secondary text-primary-content'
-                } flex items-center justify-center`}>
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center`}
+                     style={{
+                       background: isDeleted 
+                         ? 'var(--color-bg-secondary)' 
+                         : 'linear-gradient(to bottom right, var(--color-button-primary), var(--color-button-primary-hover))',
+                       color: 'white'
+                     }}>
                   <span className="text-lg font-bold">
                     {otherUser.name ? otherUser.name.charAt(0).toUpperCase() : "?"}
-                          </span>
-                      </div>
+                  </span>
+                </div>
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-base-content truncate">
+                <h3 className="font-bold truncate" style={{ color: 'var(--color-text-primary)' }}>
                   {isDeleted ? "Deleted User" : otherUser.name || "Unknown User"}
                 </h3>
-                <p className="text-sm text-base-content/70 truncate">
+                <p className="text-sm truncate" style={{ color: 'var(--color-text-secondary)' }}>
                   {lastMessageText}
                 </p>
               </div>
             </div>
             <div className="flex flex-col items-end justify-between h-full">
-              <span className="text-xs text-base-content/60 mb-1">
+              <span className="text-xs mb-1" style={{ color: 'var(--color-text-tertiary)' }}>
                 {timeString}
               </span>
               {unreadCount > 0 && (
-                <div className="badge badge-primary badge-sm">{unreadCount}</div>
+                <div className="badge badge-sm" 
+                     style={{ 
+                       backgroundColor: 'var(--color-button-primary)', 
+                       color: 'white' 
+                     }}>
+                  {unreadCount}
+                </div>
               )}
             </div>
-              </div>
-            </div>
           </div>
-              );
+        </div>
+      </div>
+    );
   };
 
   const formatTimeOrDate = (date) => {
@@ -468,10 +480,10 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-base-100/50">
+    <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--color-bg-elevated)' }}>
       {/* Error display */}
       {error && (
-        <div className="alert alert-error m-3 shadow-sm">
+        <div className="alert m-3 shadow-sm" style={{ backgroundColor: 'var(--color-bg-error)', color: 'var(--color-text-error)' }}>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
@@ -482,16 +494,16 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
       {/* Loading state */}
       {loading ? (
         <div className="flex justify-center items-center flex-grow p-8">
-          <div className="loading loading-spinner loading-lg text-primary"></div>
+          <div className="loading loading-spinner loading-lg" style={{ color: 'var(--color-button-primary)' }}></div>
         </div>
       ) : chatRooms.length === 0 ? (
         <div className="flex flex-col justify-center items-center flex-grow p-8 text-center">
-          <div className="mb-4 text-6xl opacity-30 bg-gradient-to-br from-primary to-secondary bg-clip-text text-transparent">💬</div>
-          <h3 className="text-lg font-semibold mb-2">No chats yet</h3>
-          <p className="text-base-content/70">
+          <div className="mb-4 text-6xl opacity-30">💬</div>
+          <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>No chats yet</h3>
+          <p style={{ color: 'var(--color-text-secondary)' }}>
             Start a conversation with a friend to begin chatting
-              </p>
-            </div>
+          </p>
+        </div>
       ) : (
         <div className="p-3 overflow-y-auto flex-grow">
           {chatRooms.map((room) => (

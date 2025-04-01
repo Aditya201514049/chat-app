@@ -752,35 +752,44 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError, on
   return (
     <div className="flex flex-col h-full">
           {/* Chat header */}
-      <div className="bg-gradient-to-r from-primary/80 to-primary p-4 flex items-center shadow-md">
+      <div className="p-4 flex items-center shadow-md" 
+           style={{ 
+             background: 'linear-gradient(to right, var(--color-bg-gradient-start), var(--color-bg-gradient-end))',
+             color: 'var(--color-text-navbar)'
+           }}>
               <button
                 onClick={onBack}
-          className="btn btn-circle btn-ghost btn-sm mr-2 text-primary-content hover:bg-primary-focus/50"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                className="btn btn-circle btn-ghost btn-sm mr-2 hover:bg-primary-focus/50"
+                style={{ color: 'var(--color-text-navbar)' }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
                 </svg>
               </button>
         
-        <div className="avatar placeholder mr-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary text-primary-content flex items-center justify-center">
-            <span className="text-base font-bold">
-              {otherUser.name ? otherUser.name.charAt(0).toUpperCase() : "?"}
+              <div className="avatar placeholder mr-3">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center" 
+                     style={{ 
+                       background: 'linear-gradient(to bottom right, var(--color-button-primary), var(--color-button-primary-hover))',
+                       color: 'white'
+                     }}>
+                  <span className="text-base font-bold">
+                    {otherUser.name ? otherUser.name.charAt(0).toUpperCase() : "?"}
                   </span>
                 </div>
-                </div>
-        
-        {isTyping && (
-          <div className="text-xs text-primary-content flex items-center">
-            <span className="mr-1">typing</span>
-            <span className="loading loading-dots loading-xs"></span>
               </div>
-        )}
+        
+              {isTyping && (
+                <div className="text-xs flex items-center" style={{ color: 'var(--color-text-navbar)' }}>
+                  <span className="mr-1">typing</span>
+                  <span className="loading loading-dots loading-xs"></span>
+                </div>
+              )}
             </div>
       
       {/* Error message */}
       {error && (
-        <div className="alert alert-error mx-4 my-2 shadow-sm">
+        <div className="alert mx-4 my-2 shadow-sm" style={{ backgroundColor: 'var(--color-bg-error)', color: 'var(--color-text-error)' }}>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
@@ -789,18 +798,18 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError, on
       )}
       
       {/* Messages area */}
-      <div className="flex-grow overflow-y-auto p-4 bg-gradient-to-b from-base-100 to-base-200/50">
+      <div className="flex-grow overflow-y-auto p-4" style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
         {loading ? (
           <div className="flex justify-center items-center h-full">
-            <div className="loading loading-spinner loading-lg text-primary"></div>
+            <div className="loading loading-spinner loading-lg" style={{ color: 'var(--color-button-primary)' }}></div>
               </div>
             ) : (
               <>
             {messageGroups.length === 0 ? (
               <div className="flex flex-col justify-center items-center h-full text-center">
-                <div className="mb-4 text-6xl opacity-30 bg-gradient-to-br from-primary to-secondary bg-clip-text text-transparent">💬</div>
-                <h3 className="text-lg font-semibold mb-2">No messages yet</h3>
-                <p className="text-base-content/70">
+                <div className="mb-4 text-6xl opacity-30">💬</div>
+                <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text-primary)' }}>No messages yet</h3>
+                <p style={{ color: 'var(--color-text-secondary)' }}>
                   Send a message to start the conversation
                 </p>
                   </div>
@@ -808,7 +817,7 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError, on
               messageGroups.map((group, groupIndex) => (
                 <div key={group.date} className="mb-6">
                   {/* Date separator */}
-                  <div className="divider text-xs text-base-content/60 before:bg-primary/20 after:bg-primary/20">
+                  <div className="divider text-xs before:bg-primary/20 after:bg-primary/20" style={{ color: 'var(--color-text-tertiary)' }}>
                     {group.formattedDate}
                   </div>
                   
@@ -826,23 +835,30 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError, on
                       >
                         {showAvatar && !isCurrentUser && (
                           <div className="chat-image avatar placeholder">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-secondary to-accent text-primary-content flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center" 
+                                 style={{ 
+                                   background: 'linear-gradient(to bottom right, var(--color-button-primary), var(--color-button-primary-hover))',
+                                   color: 'white'
+                                 }}>
                               <span className="text-base font-bold">
                                 {otherUser.name ? otherUser.name.charAt(0).toUpperCase() : "?"}
-                            </span>
+                              </span>
                             </div>
                           </div>
                         )}
                         
-                        <div className={`chat-bubble shadow-sm ${
-                          isCurrentUser 
-                            ? message.error 
-                              ? 'chat-bubble-error' 
-                              : message.pending 
-                                ? 'bg-primary/60 text-primary-content' 
-                                : 'bg-gradient-to-r from-primary to-primary-focus text-primary-content' 
-                            : 'bg-base-300 text-base-content'
-                        }`}>
+                        <div className={`chat-bubble shadow-sm`} style={{
+                          backgroundColor: isCurrentUser 
+                            ? message.error
+                              ? 'var(--color-button-danger)'
+                              : message.pending
+                                ? 'var(--color-button-primary-hover)'
+                                : 'var(--color-bg-message-mine)'
+                            : 'var(--color-bg-message-others)',
+                          color: isCurrentUser
+                            ? 'var(--color-text-message-mine)'
+                            : 'var(--color-text-message-others)'
+                        }}>
                           {message.content}
                           
                           {message.error && (
@@ -855,7 +871,7 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError, on
                               )}
                             </div>
                         
-                        <div className="chat-footer opacity-70 text-xs flex gap-1">
+                        <div className="chat-footer opacity-70 text-xs flex gap-1" style={{ color: 'var(--color-text-tertiary)' }}>
                           {formatMessageTime(message.createdAt)}
                           {message.pending && (
                             <span className="flex items-center">
@@ -876,23 +892,32 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError, on
           </div>
 
       {/* Message input */}
-      <div className="p-3 bg-base-200 shadow-inner">
+      <div className="p-3 shadow-inner" style={{ backgroundColor: 'var(--color-bg-footer)' }}>
         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
               <input
                 type="text"
                 value={messageContent}
                 onChange={handleTyping}
                 placeholder="Type a message..."
-            className="input input-bordered flex-grow bg-base-100 focus:border-primary"
-            disabled={loading}
+                className="input input-bordered flex-grow focus:border-primary"
+                style={{ 
+                  backgroundColor: 'var(--color-bg-input)',
+                  color: 'var(--color-text-input)',
+                  borderColor: 'var(--color-border-input)'
+                }}
+                disabled={loading}
               />
               <button
                 type="submit"
-            className="btn btn-circle bg-gradient-to-r from-primary to-primary-focus text-primary-content hover:bg-primary-focus border-none"
-            disabled={!messageContent.trim() || loading}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                className="btn btn-circle border-none"
+                style={{ 
+                  background: 'linear-gradient(to right, var(--color-button-primary), var(--color-button-primary-hover))', 
+                  color: 'white' 
+                }}
+                disabled={!messageContent.trim() || loading}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                 </svg>
               </button>
           </form>

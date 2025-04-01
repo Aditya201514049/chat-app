@@ -215,27 +215,35 @@ const HomePage2 = () => {
   // If we're in an error state or redirecting, show minimal UI
   if (authError) {
     return (
-      <div className="fixed inset-0 pt-16 bg-gray-50 flex items-center justify-center">
+      <div className="fixed inset-0 pt-16 flex items-center justify-center" 
+           style={{ backgroundColor: 'var(--color-bg-primary)', color: 'var(--color-text-primary)' }}>
         <div className="text-center p-6">
-          <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4"
+               style={{ backgroundColor: 'var(--color-bg-error-light)' }}>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" 
+                 style={{ color: 'var(--color-text-error)' }}
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <h3 className="text-xl font-medium text-gray-800">Authentication Required</h3>
-          <p className="text-gray-500 mt-2">Redirecting to login page...</p>
+          <h3 className="text-xl font-medium" style={{ color: 'var(--color-text-primary)' }}>Authentication Required</h3>
+          <p className="mt-2" style={{ color: 'var(--color-text-secondary)' }}>Redirecting to login page...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 pt-16 bg-gray-50">
+    <div className="fixed inset-0 pt-16" style={{ backgroundColor: 'var(--color-bg-primary)' }}>
       <div className="flex h-full overflow-hidden">
         {/* Chat list panel */}
-        <div className={`${isMobile && selectedChat ? 'hidden' : 'flex'} w-full md:w-1/3 lg:w-1/4 border-r border-gray-200 flex-col bg-white`}>
-          <div className="p-4 border-b border-gray-200">
-            <h1 className="text-xl font-semibold text-gray-800">Conversations</h1>
+        <div className={`${isMobile && selectedChat ? 'hidden' : 'flex'} w-full md:w-1/3 lg:w-1/4 border-r flex-col`}
+             style={{ 
+               backgroundColor: 'var(--color-bg-elevated)', 
+               borderColor: 'var(--color-border-light)'
+             }}>
+          <div className="p-4 border-b" style={{ borderColor: 'var(--color-border-light)' }}>
+            <h1 className="text-xl font-semibold" style={{ color: 'var(--color-text-primary)' }}>Conversations</h1>
           </div>
           <div className="flex-1 overflow-y-auto">
             <ChatList 
@@ -252,15 +260,19 @@ const HomePage2 = () => {
         </div>
 
         {/* Conversation panel */}
-        <div className={`${isMobile && !selectedChat ? 'hidden' : 'flex'} flex-col flex-1 bg-gray-50`}>
+        <div className={`${isMobile && !selectedChat ? 'hidden' : 'flex'} flex-col flex-1`}
+             style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
           {isLoadingChat ? (
-            <div className="flex items-center justify-center h-full bg-gray-50">
+            <div className="flex items-center justify-center h-full" 
+                 style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
               <div className="text-center p-6">
-                <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4"
+                     style={{ backgroundColor: 'var(--color-bg-highlight)' }}>
+                  <div className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin"
+                       style={{ borderColor: 'var(--color-button-primary)', borderTopColor: 'transparent' }}></div>
                 </div>
-                <h3 className="text-xl font-medium text-gray-800">Loading conversation</h3>
-                <p className="text-gray-500 mt-2">Please wait while we fetch your chat</p>
+                <h3 className="text-xl font-medium" style={{ color: 'var(--color-text-primary)' }}>Loading conversation</h3>
+                <p className="mt-2" style={{ color: 'var(--color-text-secondary)' }}>Please wait while we fetch your chat</p>
               </div>
             </div>
           ) : selectedChat ? (
@@ -281,15 +293,19 @@ const HomePage2 = () => {
               onChatIdChanged={handleChatIdChanged}
             />
           ) : (
-            <div className="flex items-center justify-center h-full bg-gray-50">
+            <div className="flex items-center justify-center h-full" 
+                 style={{ backgroundColor: 'var(--color-bg-secondary)' }}>
               <div className="text-center p-6">
-                <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4" 
+                     style={{ backgroundColor: 'var(--color-bg-highlight)' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" 
+                       style={{ color: 'var(--color-button-primary)' }}
+                       fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-medium text-gray-800">No conversation selected</h3>
-                <p className="text-gray-500 mt-2">Choose a conversation from the list to start chatting</p>
+                <h3 className="text-xl font-medium" style={{ color: 'var(--color-text-primary)' }}>No conversation selected</h3>
+                <p className="mt-2" style={{ color: 'var(--color-text-secondary)' }}>Choose a conversation from the list to start chatting</p>
               </div>
             </div>
           )}

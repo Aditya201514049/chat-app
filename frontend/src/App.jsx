@@ -14,7 +14,7 @@ import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import HelpPage from "./pages/HelpPage";
 import FeedbackPage from "./pages/FeedbackPage";
-import { ThemeProvider } from "./contexts/ThemeContext";
+import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import { SocketProvider } from "./contexts/SocketContext";
 
 // Protected route for authenticated users only
@@ -46,6 +46,7 @@ const PublicOnlyRoute = ({ children }) => {
 const AppContent = () => {
   const location = useLocation();
   const isAuthenticated = localStorage.getItem("token"); // Check authentication
+  const { theme } = useTheme(); // Get current theme from context
   
   // Determine if we're on a chat page (to handle layout differently)
   const isChatPage = (pathname) => {
@@ -53,7 +54,10 @@ const AppContent = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen" style={{ 
+      backgroundColor: 'var(--color-bg-primary)',
+      color: 'var(--color-text-primary)'
+    }}>
       <Navbar />
 
       {/* Main content with conditional padding */}

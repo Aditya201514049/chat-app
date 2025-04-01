@@ -245,7 +245,7 @@ const Navbar = () => {
             <Link to="/login" className="btn btn-sm btn-ghost text-primary-content hover:bg-primary-focus/50">
               Login
             </Link>
-            <Link to="/register" className="btn btn-sm bg-white text-primary hover:bg-base-200">
+            <Link to="/register" className="btn btn-sm text-primary hover:bg-base-200" style={{ backgroundColor: 'var(--color-bg-elevated)' }}>
               Register
             </Link>
           </div>
@@ -257,7 +257,10 @@ const Navbar = () => {
               className="btn btn-ghost btn-circle avatar placeholder"
               onClick={toggleProfileDropdown}
             >
-              <div className="bg-white text-primary rounded-full w-10">
+              <div className="rounded-full w-10" style={{ 
+                backgroundColor: 'var(--color-bg-elevated)',
+                color: 'var(--color-button-primary)'
+              }}>
                 <span>{userName.charAt(0).toUpperCase()}</span>
               </div>
             </div>

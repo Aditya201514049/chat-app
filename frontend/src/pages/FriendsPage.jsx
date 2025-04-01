@@ -239,7 +239,7 @@ const FriendsPage = () => {
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map((item) => (
-            <div key={item} className="card bg-base-100 shadow-md animate-pulse">
+            <div key={item} className="card shadow-md animate-pulse" style={{ backgroundColor: 'var(--color-bg-card)' }}>
               <div className="card-body">
                 <div className="flex items-center space-x-4">
                   <div className="skeleton rounded-full h-12 w-12"></div>
@@ -276,7 +276,8 @@ const FriendsPage = () => {
               {filteredUsers.map((user) => (
                 <div
                   key={user._id}
-                  className="card bg-base-100 hover:shadow-xl transition-all duration-300 shadow-md overflow-hidden"
+                  className="card hover:shadow-xl transition-all duration-300 shadow-md overflow-hidden"
+                  style={{ backgroundColor: 'var(--color-bg-card)' }}
                 >
                   <div className="h-2 bg-gradient-to-r from-primary to-secondary"></div>
                   <div className="card-body">

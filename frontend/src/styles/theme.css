@@ -22,6 +22,8 @@
   --color-bg-message-mine: #3b82f6;
   --color-bg-message-others: #ffffff;
   --color-bg-footer: #f3f4f6;
+  --color-bg-error: #fee2e2; /* Light red background for errors */
+  --color-bg-error-light: #fef2f2; /* Very light red for error indicators */
   
   /* Text colors */
   --color-text-primary: #111827;
@@ -56,54 +58,56 @@
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-/* Dark theme */
+/* Dark theme - Soothing Gray */
 .dark-theme {
   /* Background colors */
-  --color-bg-primary: #121212;
-  --color-bg-secondary: #1f2937;
-  --color-bg-elevated: #1e1e1e;
-  --color-bg-navbar: #1e3a8a; /* blue-900 */
-  --color-bg-input: #374151;
-  --color-bg-dropdown: #1f2937;
-  --color-bg-highlight: #172554;
-  --color-bg-gradient-start: #1e3a8a;
+  --color-bg-primary: #2a2a2a;       /* Soothing dark gray background */
+  --color-bg-secondary: #363636;     /* Slightly lighter gray */
+  --color-bg-elevated: #3a3a3a;      /* Elevated surfaces */
+  --color-bg-navbar: #1e3a8a;        /* Keep navbar blue-900 */
+  --color-bg-input: #404040;         /* Input background */
+  --color-bg-dropdown: #363636;      /* Dropdown background */
+  --color-bg-highlight: #404966;     /* Highlight with a touch of blue */
+  --color-bg-gradient-start: #1e3a8a;/* Keep gradient consistent with navbar */
   --color-bg-gradient-end: #1e40af;
-  --color-bg-avatar: #1d4ed8;
-  --color-bg-sidebar: #111827;
-  --color-bg-card: #1f2937;
-  --color-bg-message-mine: #1d4ed8;
-  --color-bg-message-others: #374151;
-  --color-bg-footer: #111827;
+  --color-bg-avatar: #1d4ed8;        /* Avatar background */
+  --color-bg-sidebar: #2a2a2a;       /* Sidebar background */
+  --color-bg-card: #363636;          /* Card background */
+  --color-bg-message-mine: #1d4ed8;  /* My messages - blue */
+  --color-bg-message-others: #404040;/* Other messages - gray */
+  --color-bg-footer: #2a2a2a;        /* Footer background */
+  --color-bg-error: #7f1d1d;         /* Dark red background for errors */
+  --color-bg-error-light: #450a0a;   /* Darker red for error indicators */
   
   /* Text colors */
-  --color-text-primary: #f9fafb;
-  --color-text-secondary: #e5e7eb;
-  --color-text-tertiary: #9ca3af;
-  --color-text-navbar: #ffffff;
-  --color-text-message-mine: #ffffff;
-  --color-text-message-others: #f3f4f6;
-  --color-text-input: #f9fafb;
-  --color-text-placeholder: #6b7280;
-  --color-text-error: #f87171;
-  --color-text-success: #34d399;
+  --color-text-primary: #e6e6e6;     /* Light gray text for main content */
+  --color-text-secondary: #c2c2c2;   /* Slightly darker for secondary text */
+  --color-text-tertiary: #a0a0a0;    /* Even darker for tertiary text */
+  --color-text-navbar: #ffffff;      /* White text for navbar */
+  --color-text-message-mine: #ffffff;/* White text for my messages */
+  --color-text-message-others: #e6e6e6; /* Light gray for other messages */
+  --color-text-input: #e6e6e6;       /* Light gray for input text */
+  --color-text-placeholder: #909090; /* Medium gray for placeholder text */
+  --color-text-error: #f87171;       /* Light red for errors */
+  --color-text-success: #34d399;     /* Light green for success */
   
   /* Border colors */
-  --color-border-light: #374151;
-  --color-border-input: #4b5563;
-  --color-border-message: #4b5563;
-  --color-border-dropdown: #4b5563;
+  --color-border-light: #4a4a4a;     /* Light border */
+  --color-border-input: #5a5a5a;     /* Input border */
+  --color-border-message: #4a4a4a;   /* Message border */
+  --color-border-dropdown: #5a5a5a;  /* Dropdown border */
   
   /* Button colors */
-  --color-button-primary: #2563eb;
-  --color-button-primary-hover: #1d4ed8;
-  --color-button-secondary: #4b5563;
-  --color-button-secondary-hover: #374151;
-  --color-button-danger: #dc2626;
-  --color-button-danger-hover: #b91c1c;
+  --color-button-primary: #3b82f6;   /* Primary button - blue */
+  --color-button-primary-hover: #2563eb; /* Primary button hover */
+  --color-button-secondary: #4a4a4a; /* Secondary button - dark gray */
+  --color-button-secondary-hover: #5a5a5a; /* Secondary button hover */
+  --color-button-danger: #dc2626;    /* Danger button - red */
+  --color-button-danger-hover: #b91c1c; /* Danger button hover */
   
   /* Shadow - darker for dark mode */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.15);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.15);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
 } 
