@@ -59,19 +59,36 @@ const FAQPage = () => {
 
       {/* FAQ Accordion */}
       <div className="max-w-3xl mx-auto mb-16">
-        <div className="join join-vertical w-full">
+        <div className="space-y-4 w-full">
           {faqs.map((faq, index) => (
-            <div key={index} className="collapse collapse-arrow join-item border" style={{ borderColor: 'var(--color-border-light)' }}>
-              <input 
-                type="radio" 
-                name="faq-accordion" 
-                checked={openIndex === index}
-                onChange={() => toggleFAQ(index)}
-              />
-              <div className="collapse-title text-xl font-medium" style={{ color: 'var(--color-text-primary)' }}>
-                {faq.question}
-              </div>
-              <div className="collapse-content" style={{ color: 'var(--color-text-secondary)' }}>
+            <div key={index} 
+              className="border rounded-lg overflow-hidden"
+              style={{ borderColor: 'var(--color-border-light)' }}
+            >
+              <button 
+                onClick={() => toggleFAQ(index)}
+                className="w-full px-4 py-3 flex justify-between items-center"
+                style={{ color: 'var(--color-text-primary)' }}
+              >
+                <span className="text-xl font-medium">{faq.question}</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                  className={`w-6 h-6 transition-transform ${openIndex === index ? 'rotate-180' : ''}`}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                </svg>
+              </button>
+              
+              <div 
+                className={`px-4 overflow-hidden transition-all duration-200 ease-in-out ${
+                  openIndex === index ? 'max-h-96 py-4' : 'max-h-0 py-0'
+                }`}
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
                 <p>{faq.answer}</p>
               </div>
             </div>
