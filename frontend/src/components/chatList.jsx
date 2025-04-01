@@ -399,16 +399,16 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
     const timeString = formatTimeOrDate(lastMessageDate);
     const unreadCount = unreadCounts[getChatUniqueId(room)] || 0;
     const isDeleted = isDeletedUser(otherUser);
-    
-    return (
-      <div 
+              
+              return (
+                <div
         onClick={() => handleSelect(room)}
         className={`card cursor-pointer transition-all hover:bg-base-200/70 ${
           isSelected ? 'bg-primary/10 border-l-4 border-primary shadow-md' : 'bg-base-100 hover:shadow-md shadow-sm'
         } mb-3 overflow-hidden`}
       >
         <div className="card-body p-3">
-          <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="avatar placeholder">
                 <div className={`w-12 h-12 rounded-full ${
@@ -418,8 +418,8 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
                 } flex items-center justify-center`}>
                   <span className="text-lg font-bold">
                     {otherUser.name ? otherUser.name.charAt(0).toUpperCase() : "?"}
-                  </span>
-                </div>
+                          </span>
+                      </div>
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-bold text-base-content truncate">
@@ -438,10 +438,10 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
                 <div className="badge badge-primary badge-sm">{unreadCount}</div>
               )}
             </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    );
+              );
   };
 
   const formatTimeOrDate = (date) => {
@@ -490,8 +490,8 @@ const ChatList = ({ onChatSelect, selectedChatId, onAuthError }) => {
           <h3 className="text-lg font-semibold mb-2">No chats yet</h3>
           <p className="text-base-content/70">
             Start a conversation with a friend to begin chatting
-          </p>
-        </div>
+              </p>
+            </div>
       ) : (
         <div className="p-3 overflow-y-auto flex-grow">
           {chatRooms.map((room) => (

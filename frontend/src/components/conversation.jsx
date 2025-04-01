@@ -751,32 +751,32 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError, on
 
   return (
     <div className="flex flex-col h-full">
-      {/* Chat header */}
+          {/* Chat header */}
       <div className="bg-gradient-to-r from-primary/80 to-primary p-4 flex items-center shadow-md">
-        <button 
-          onClick={onBack} 
+              <button
+                onClick={onBack}
           className="btn btn-circle btn-ghost btn-sm mr-2 text-primary-content hover:bg-primary-focus/50"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-          </svg>
-        </button>
+                </svg>
+              </button>
         
         <div className="avatar placeholder mr-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary text-primary-content flex items-center justify-center">
             <span className="text-base font-bold">
               {otherUser.name ? otherUser.name.charAt(0).toUpperCase() : "?"}
-            </span>
-          </div>
-        </div>
+                  </span>
+                </div>
+                </div>
         
         {isTyping && (
           <div className="text-xs text-primary-content flex items-center">
             <span className="mr-1">typing</span>
             <span className="loading loading-dots loading-xs"></span>
-          </div>
+              </div>
         )}
-      </div>
+            </div>
       
       {/* Error message */}
       {error && (
@@ -785,7 +785,7 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError, on
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
           <span>{error}</span>
-        </div>
+          </div>
       )}
       
       {/* Messages area */}
@@ -793,9 +793,9 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError, on
         {loading ? (
           <div className="flex justify-center items-center h-full">
             <div className="loading loading-spinner loading-lg text-primary"></div>
-          </div>
-        ) : (
-          <>
+              </div>
+            ) : (
+              <>
             {messageGroups.length === 0 ? (
               <div className="flex flex-col justify-center items-center h-full text-center">
                 <div className="mb-4 text-6xl opacity-30 bg-gradient-to-br from-primary to-secondary bg-clip-text text-transparent">💬</div>
@@ -803,7 +803,7 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError, on
                 <p className="text-base-content/70">
                   Send a message to start the conversation
                 </p>
-              </div>
+                  </div>
             ) : (
               messageGroups.map((group, groupIndex) => (
                 <div key={group.date} className="mb-6">
@@ -829,7 +829,7 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError, on
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-secondary to-accent text-primary-content flex items-center justify-center">
                               <span className="text-base font-bold">
                                 {otherUser.name ? otherUser.name.charAt(0).toUpperCase() : "?"}
-                              </span>
+                            </span>
                             </div>
                           </div>
                         )}
@@ -846,14 +846,14 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError, on
                           {message.content}
                           
                           {message.error && (
-                            <button 
+                                <button
                               onClick={() => handleRetryMessage(message)}
                               className="text-xs underline ml-2"
-                            >
-                              Retry
-                            </button>
-                          )}
-                        </div>
+                                >
+                                  Retry
+                                </button>
+                              )}
+                            </div>
                         
                         <div className="chat-footer opacity-70 text-xs flex gap-1">
                           {formatMessageTime(message.createdAt)}
@@ -867,35 +867,35 @@ const Conversation = ({ chatId, onBack, chatName, hasJoinedRoom, onAuthError, on
                       </div>
                     );
                   })}
-                </div>
+                    </div>
               ))
             )}
-            <div ref={messagesEndRef} />
-          </>
-        )}
-      </div>
-      
+                <div ref={messagesEndRef} />
+              </>
+            )}
+          </div>
+
       {/* Message input */}
       <div className="p-3 bg-base-200 shadow-inner">
         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-          <input
-            type="text"
-            value={messageContent}
-            onChange={handleTyping}
-            placeholder="Type a message..."
+              <input
+                type="text"
+                value={messageContent}
+                onChange={handleTyping}
+                placeholder="Type a message..."
             className="input input-bordered flex-grow bg-base-100 focus:border-primary"
             disabled={loading}
-          />
-          <button 
-            type="submit" 
+              />
+              <button
+                type="submit"
             className="btn btn-circle bg-gradient-to-r from-primary to-primary-focus text-primary-content hover:bg-primary-focus border-none"
             disabled={!messageContent.trim() || loading}
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-            </svg>
-          </button>
-        </form>
+                </svg>
+              </button>
+          </form>
       </div>
     </div>
   );

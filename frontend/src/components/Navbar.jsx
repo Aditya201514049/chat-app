@@ -135,27 +135,27 @@ const Navbar = () => {
                     to="/home" 
                     style={{ color: isActive('/home') ? '#6366f1' : '' }}
                     className={isActive('/home') ? 'font-bold active !text-primary' : ''}
-                  >
-                    Home
-                  </Link>
+                >
+                  Home
+              </Link>
                 </li>
                 <li>
                   <Link 
                     to="/friends" 
                     style={{ color: isActive('/friends') ? '#6366f1' : '' }}
                     className={isActive('/friends') ? 'font-bold active !text-primary' : ''}
-                  >
-                    Friends
-                  </Link>
+                >
+                  Friends
+              </Link>
                 </li>
                 <li>
-                  <Link 
-                    to="/profile" 
+                      <Link 
+                        to="/profile"
                     style={{ color: isActive('/profile') ? '#6366f1' : '' }}
                     className={isActive('/profile') ? 'font-bold active !text-primary' : ''}
-                  >
+                      >
                     Profile
-                  </Link>
+                      </Link>
                 </li>
                 <li>
                   <a onClick={handleLogout} className="text-error">Logout</a>
@@ -173,13 +173,13 @@ const Navbar = () => {
                   </Link>
                 </li>
                 <li>
-                  <Link 
-                    to="/register" 
+                    <Link
+                      to="/register"
                     style={{ color: isActive('/register') ? '#6366f1' : '' }}
                     className={isActive('/register') ? 'font-bold active !text-primary' : ''}
-                  >
-                    Register
-                  </Link>
+                    >
+                      Register
+                    </Link>
                 </li>
               </>
             )}
@@ -193,28 +193,28 @@ const Navbar = () => {
         {token ? (
           <ul className="menu menu-horizontal px-1">
             <li className="mx-1">
-              <Link 
-                to="/home" 
-                style={{ 
+                    <Link
+                      to="/home"
+                      style={{ 
                   backgroundColor: isActive('/home') ? 'white' : 'transparent',
                   color: isActive('/home') ? '#6366f1' : 'white'
-                }}
+                      }}
                 className="font-medium hover:bg-primary-focus/30"
-              >
-                Home
-              </Link>
+                    >
+                      Home
+                    </Link>
             </li>
             <li className="mx-1">
-              <Link 
-                to="/friends" 
-                style={{ 
+                    <Link
+                      to="/friends"
+                      style={{ 
                   backgroundColor: isActive('/friends') ? 'white' : 'transparent',
                   color: isActive('/friends') ? '#6366f1' : 'white'
-                }}
+                      }}
                 className="font-medium hover:bg-primary-focus/30"
-              >
-                Friends
-              </Link>
+                    >
+                      Friends
+                    </Link>
             </li>
           </ul>
         ) : null}
@@ -245,32 +245,32 @@ const Navbar = () => {
                 <div className="text-xs opacity-60">{userEmail}</div>
               </li>
               <li>
-                <Link 
-                  to="/profile" 
-                  style={{ 
+                    <Link
+                      to="/profile"
+                      style={{ 
                     backgroundColor: isActive('/profile') ? '#6366f1' : '',
                     color: isActive('/profile') ? 'white' : ''
-                  }}
-                >
+                      }}
+                    >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                  Profile
-                </Link>
+                      Profile
+                    </Link>
               </li>
               <li>
                 <a onClick={handleLogout} className="text-error">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
-                  Logout
+                        Logout
                 </a>
               </li>
             </ul>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
   );
 };
 
