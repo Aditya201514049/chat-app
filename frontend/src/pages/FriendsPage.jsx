@@ -55,7 +55,7 @@ const FriendsPage = () => {
 
         if (response.ok) {
           const chats = await response.json();
-          
+
           // Create a map of user IDs to chat IDs
           const chatMap = {};
           chats.forEach(chat => {
@@ -66,7 +66,7 @@ const FriendsPage = () => {
               }
             });
           });
-          
+
           setExistingChats(chatMap);
         }
       } catch (error) {
@@ -80,47 +80,47 @@ const FriendsPage = () => {
   const handleCreateChat = async (recipientId, recipientName) => {
     try {
       const token = localStorage.getItem("token");
-      
+
       // If chat already exists, navigate to it
       if (existingChats[recipientId]) {
         // Pre-join the chat room before navigation if connected
         if (isConnected) {
           console.log(`Joining existing chat room ${existingChats[recipientId]}`);
           joinChatRoom(existingChats[recipientId]);
-          
+
           // Small delay to ensure the room is joined before navigation
           await new Promise(resolve => setTimeout(resolve, 300));
         }
-        
+
         // Show a notification that we're navigating to an existing chat
         setCreatedChatInfo({
           name: recipientName,
           isNew: false
         });
         setShowChatCreated(true);
-        
+
         // Navigate after a short delay to allow the user to see the notification
         setTimeout(() => {
-          navigate("/home", { 
-            state: { 
+          navigate("/home", {
+            state: {
               selectedChatId: existingChats[recipientId],
-              fromFriendsPage: true 
-            } 
+              fromFriendsPage: true
+            }
           });
         }, 1500);
-        
+
         return;
       }
-      
+
       // Show loading indicator for this specific user
-      setUsers(prevUsers => 
-        prevUsers.map(user => 
-          user._id === recipientId 
-            ? { ...user, isLoading: true } 
+      setUsers(prevUsers =>
+        prevUsers.map(user =>
+          user._id === recipientId
+            ? { ...user, isLoading: true }
             : user
         )
       );
-      
+
       const response = await fetch(`${API_URL}/api/chats/create`, {
         method: "POST",
         headers: {
@@ -133,7 +133,7 @@ const FriendsPage = () => {
       if (!response.ok) {
         throw new Error("Error creating chat");
       }
-      
+
       const chat = await response.json();
 
       // Update our existing chats map
@@ -143,10 +143,10 @@ const FriendsPage = () => {
       }));
 
       // Remove loading state
-      setUsers(prevUsers => 
-        prevUsers.map(user => 
-          user._id === recipientId 
-            ? { ...user, isLoading: false } 
+      setUsers(prevUsers =>
+        prevUsers.map(user =>
+          user._id === recipientId
+            ? { ...user, isLoading: false }
             : user
         )
       );
@@ -155,7 +155,7 @@ const FriendsPage = () => {
       if (isConnected && chat._id) {
         console.log(`Pre-joining chat room ${chat._id} before navigation`);
         joinChatRoom(chat._id);
-        
+
         // Small delay to ensure the room is joined before navigation
         await new Promise(resolve => setTimeout(resolve, 300));
       }
@@ -166,24 +166,24 @@ const FriendsPage = () => {
         isNew: true
       });
       setShowChatCreated(true);
-      
+
       // Navigate after a short delay to allow the user to see the notification
       setTimeout(() => {
-        navigate("/home", { 
-          state: { 
+        navigate("/home", {
+          state: {
             selectedChatId: chat._id,
-            fromFriendsPage: true 
-          } 
+            fromFriendsPage: true
+          }
         });
       }, 1500);
     } catch (error) {
       console.error("Error:", error);
-      
+
       // Remove loading state on error
-      setUsers(prevUsers => 
-        prevUsers.map(user => 
-          user._id === recipientId 
-            ? { ...user, isLoading: false } 
+      setUsers(prevUsers =>
+        prevUsers.map(user =>
+          user._id === recipientId
+            ? { ...user, isLoading: false }
             : user
         )
       );
@@ -200,12 +200,18 @@ const FriendsPage = () => {
       {/* Search input */}
       <div className="form-control w-full mx-auto mb-8">
         <div className="flex items-center w-full max-w-4xl mx-auto gap-2">
+
           <input
             type="text"
             placeholder="Search people..."
             className="input input-bordered w-full focus:outline-primary"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              color: 'var(--color-text-primary)', // Ensure text is visible in dark mode
+              backgroundColor: 'var(--color-bg-input)', // Match the input background
+              borderColor: 'var(--color-border-input)', // Match the border color
+            }}
           />
           <button className="btn btn-square bg-primary text-primary-content border-none">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -227,8 +233,8 @@ const FriendsPage = () => {
                 {createdChatInfo.isNew ? "Chat Created!" : "Opening Chat"}
               </h3>
               <div className="text-xs">
-                {createdChatInfo.isNew 
-                  ? `New chat with ${createdChatInfo.name} created. Redirecting...` 
+                {createdChatInfo.isNew
+                  ? `New chat with ${createdChatInfo.name} created. Redirecting...`
                   : `You already have a chat with ${createdChatInfo.name}. Opening...`}
               </div>
             </div>
@@ -301,11 +307,10 @@ const FriendsPage = () => {
                     <button
                       onClick={() => handleCreateChat(user._id, user.name)}
                       disabled={user.isLoading}
-                      className={`btn mt-4 ${
-                        existingChats[user._id]
-                        ? "btn-secondary"
-                        : "btn-primary"
-                      } ${user.isLoading ? "loading" : ""}`}
+                      className={`btn mt-4 ${existingChats[user._id]
+                          ? "btn-secondary"
+                          : "btn-primary"
+                        } ${user.isLoading ? "loading" : ""}`}
                       style={{ color: 'white' }}
                     >
                       {user.isLoading ? (
